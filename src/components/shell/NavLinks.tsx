@@ -1,0 +1,203 @@
+"use client";
+
+import {
+  CalendarDays,
+  Ellipsis,
+  LayoutDashboard,
+  UserCog,
+  UtensilsCrossed,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useId, useRef, useState } from "react";
+import { signOut } from "@/app/actions/auth";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { cn } from "@/components/ui/cn";
+import type { NavIcon, NavLink } from "./nav";
+
+const ICONS: Record<NavIcon, LucideIcon> = {
+  agenda: CalendarDays,
+  dashboard: LayoutDashboard,
+  clients: Users,
+  operators: UserCog,
+  catalog: UtensilsCrossed,
+};
+
+/** Numero di voci dirette nella barra mobile; le altre finiscono nel menù "Altro". */
+const MOBILE_DIRECT_LINKS = 3;
+
+function isActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** Navigazione laterale desktop (≥ lg). */
+export function SidebarNav({ items }: { items: NavLink[] }) {
+  const pathname = usePathname();
+  return (
+    <nav aria-label="Navigazione principale">
+      <ul className="flex flex-col gap-1">
+        {items.map((item) => {
+          const Icon = ICONS[item.icon];
+          const active = isActive(pathname, item.href);
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-[2px] px-3 py-2.5 text-[13px] font-medium uppercase tracking-[0.12em] transition-colors duration-300",
+                  active
+                    ? "bg-petrol text-paper"
+                    : "text-sand hover:bg-white/5 hover:text-logo-cream",
+                )}
+              >
+                <Icon aria-hidden="true" className="size-[18px] shrink-0" />
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+const MOBILE_LINK_CLASS =
+  "relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors duration-300";
+
+/**
+ * Barra di navigazione inferiore mobile (< lg), con safe-area.
+ * Mostra le prime voci dirette e un pulsante "Altro" che apre un foglio con le restanti voci e l'uscita.
+ */
+export function BottomNav({ items }: { items: NavLink[] }) {
+  const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const sheetTitleId = useId();
+
+  const direct = items.slice(0, MOBILE_DIRECT_LINKS);
+  const overflow = items.slice(MOBILE_DIRECT_LINKS);
+  const overflowActive = overflow.some((item) => isActive(pathname, item.href));
+
+  useEffect(() => {
+    const dialog = sheetRef.current;
+    if (!dialog) return;
+    if (moreOpen && !dialog.open) dialog.showModal();
+    if (!moreOpen && dialog.open) dialog.close();
+  }, [moreOpen]);
+
+  return (
+    <>
+      <nav
+        aria-label="Navigazione principale"
+        className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-sand/15 bg-ink pb-[env(safe-area-inset-bottom)] lg:hidden"
+      >
+        <ul
+          className="grid"
+          style={{ gridTemplateColumns: `repeat(${direct.length + 1}, minmax(0, 1fr))` }}
+        >
+          {direct.map((item) => {
+            const Icon = ICONS[item.icon];
+            const active = isActive(pathname, item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    MOBILE_LINK_CLASS,
+                    active ? "text-logo-cream" : "text-sand/75 hover:text-sand",
+                  )}
+                >
+                  {active && (
+                    <span aria-hidden="true" className="absolute inset-x-6 top-0 h-[2px] bg-sand" />
+                  )}
+                  <Icon aria-hidden="true" className="size-5" />
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen(true)}
+              className={cn(
+                MOBILE_LINK_CLASS,
+                "w-full",
+                overflowActive || moreOpen ? "text-logo-cream" : "text-sand/75 hover:text-sand",
+              )}
+            >
+              {overflowActive && (
+                <span aria-hidden="true" className="absolute inset-x-6 top-0 h-[2px] bg-sand" />
+              )}
+              <Ellipsis aria-hidden="true" className="size-5" />
+              Altro
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <dialog
+        ref={sheetRef}
+        onClose={() => setMoreOpen(false)}
+        aria-labelledby={sheetTitleId}
+        className="no-print fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none rounded-none border-t border-sand bg-paper p-0 pb-[env(safe-area-inset-bottom)] text-ink shadow-2xl shadow-ink/30 backdrop:bg-ink/50 lg:hidden"
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-sand px-5 py-4">
+          <h2 id={sheetTitleId} className="font-serif text-2xl">
+            Altro
+          </h2>
+          <button
+            type="button"
+            aria-label="Chiudi"
+            onClick={() => setMoreOpen(false)}
+            className="rounded-[2px] p-2 text-slate-dark hover:bg-cream"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+        </div>
+
+        {overflow.length > 0 && (
+          <nav aria-label="Altre sezioni" className="px-3 py-3">
+            <ul className="flex flex-col gap-1">
+              {overflow.map((item) => {
+                const Icon = ICONS[item.icon];
+                const active = isActive(pathname, item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMoreOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3 rounded-[2px] px-3 py-3.5 text-[13px] font-medium uppercase tracking-[0.12em]",
+                        active ? "bg-petrol text-paper" : "text-ink hover:bg-cream",
+                      )}
+                    >
+                      <Icon aria-hidden="true" className="size-5 shrink-0" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
+
+        <div className="border-t border-sand px-5 py-4">
+          <form action={signOut}>
+            <SubmitButton variant="outline" size="md" className="w-full" pendingLabel="Uscita…">
+              Esci
+            </SubmitButton>
+          </form>
+        </div>
+      </dialog>
+    </>
+  );
+}
