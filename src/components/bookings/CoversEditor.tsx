@@ -51,8 +51,8 @@ export function CoversEditor({ bookingId, adults, childCount, kidsMenus }: Cover
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-6 sm:grid-cols-3">
+    <div className="flex flex-col gap-8">
+      <div className="grid items-start gap-6 md:grid-cols-3 md:gap-8">
         <CountStepper
           id="covers-adults"
           label="Adulti"
@@ -81,7 +81,7 @@ export function CoversEditor({ bookingId, adults, childCount, kidsMenus }: Cover
 
       {error && <Alert tone="danger">{error}</Alert>}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-sand pt-6">
         <Button
           variant="primary"
           size="md"

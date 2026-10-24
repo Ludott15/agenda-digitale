@@ -25,7 +25,7 @@ export function RoomOccupancyMatrix({ rooms, days, bookings }: RoomOccupancyMatr
 
   return (
     <div className="overflow-x-auto rounded-[2px] border border-sand bg-paper">
-      <table className="w-full min-w-[720px] border-collapse text-[13px]">
+      <table className="w-full min-w-[860px] border-collapse text-[13px]">
         <caption className="sr-only">Occupazione delle sale nei giorni della settimana</caption>
         <thead>
           <tr className="border-b border-sand bg-cream/60">
@@ -55,24 +55,30 @@ export function RoomOccupancyMatrix({ rooms, days, bookings }: RoomOccupancyMatr
                 if (!booking) {
                   return (
                     <td key={iso} className="p-1.5 align-middle">
-                      <div className="flex min-h-14 items-center justify-center rounded-[2px] border border-dashed border-sand">
+                      <div className="flex min-h-20 items-center justify-center rounded-[2px] border border-dashed border-sand">
                         <span className="sr-only">Libera</span>
                       </div>
                     </td>
                   );
                 }
                 const covers = totalCovers(booking);
+                const menuName = booking.menu?.name ?? "Menù da definire";
                 return (
                   <td key={iso} className="p-1.5 align-middle">
                     <Link
                       href={`/prenotazioni/${booking.id}`}
-                      title={`${bookingTitle(booking)}: ${covers} coperti su capienza ${room.capacity}`}
-                      className="flex min-h-14 flex-col justify-center rounded-[2px] bg-petrol px-2.5 py-2 text-paper transition-colors duration-200 hover:bg-petrol-hover"
+                      title={`${menuName} · ${bookingTitle(booking)}: ${covers} coperti su capienza ${room.capacity}`}
+                      className="flex min-h-20 flex-col justify-center gap-1.5 rounded-[2px] bg-petrol px-3 py-2.5 text-paper transition-colors duration-200 hover:bg-petrol-hover"
                     >
-                      <span className="text-[12px] font-medium tabular-nums">
-                        {covers}/{room.capacity}
+                      <span className="line-clamp-2 font-serif text-[15px] font-semibold leading-snug break-words">
+                        {menuName}
                       </span>
-                      <span className="truncate text-[11px] text-paper/85">{bookingTitle(booking)}</span>
+                      <span className="text-[12px] tabular-nums text-paper/90">
+                        {covers}/{room.capacity} coperti
+                      </span>
+                      <span className="line-clamp-1 break-words text-[12px] text-paper/75">
+                        {bookingTitle(booking)}
+                      </span>
                     </Link>
                   </td>
                 );

@@ -49,10 +49,10 @@ function DetailCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("flex flex-col gap-5 p-5 sm:p-6", className)}>
-      <header className="flex flex-col gap-1 border-b border-sand pb-3">
+    <Card className={cn("flex flex-col gap-6 p-5 sm:p-6", className)}>
+      <header className="flex flex-col gap-2 border-b border-sand pb-4">
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">{eyebrow}</p>
-        <h2 className="text-2xl">{title}</h2>
+        <h2 className="text-2xl break-words">{title}</h2>
       </header>
       {children}
     </Card>
@@ -63,7 +63,7 @@ function CoverTile({ label, value, emphasis = false }: { label: string; value: n
   return (
     <div
       className={cn(
-        "flex flex-col gap-1 rounded-[2px] border p-4",
+        "flex flex-col gap-2 rounded-[2px] border p-4",
         emphasis ? "border-petrol bg-petrol text-paper" : "border-sand bg-cream/40 text-ink",
       )}
     >
@@ -71,6 +71,16 @@ function CoverTile({ label, value, emphasis = false }: { label: string; value: n
         {label}
       </dt>
       <dd className="font-serif text-4xl tabular-nums leading-none sm:text-5xl">{value}</dd>
+    </div>
+  );
+}
+
+/** Riga etichetta + valore della scheda cliente: etichette su una colonna fissa, allineate. */
+function InfoRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-1 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-4">
+      <dt className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark sm:pt-0.5">{label}</dt>
+      <dd className="min-w-0 break-words text-[15px] text-ink">{children}</dd>
     </div>
   );
 }
@@ -99,6 +109,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const eventDate = toDate(booking.event_date);
   const time = formatTime(booking.event_time);
   const totalCovers = booking.adults + booking.children;
+  const menuName = booking.menu?.name ?? "Menù non selezionato";
   const dishesVersion = `${booking.menu_id ?? ""}|${booking.dishes
     .map((d) => `${d.id}:${d.course}:${d.name}:${d.sort}`)
     .join("|")}`;
@@ -110,8 +121,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-5 border-b border-sand pb-8">
+    <div className="flex flex-col gap-10">
+      <header className="flex flex-col gap-6 border-b border-sand pb-10">
         <Link
           href={`/agenda?date=${booking.event_date}&view=day`}
           className="w-fit rounded-[2px] text-[13px] font-medium text-petrol underline-offset-4 hover:underline"
@@ -124,15 +135,16 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             {capitalize(formatIt(eventDate, "EEEE d MMMM yyyy"))}
             {time ? ` · ore ${time}` : ""}
           </p>
-          <h1 className="text-3xl leading-tight sm:text-4xl lg:text-5xl">{bookingTitle(booking)}</h1>
+          <h1 className="text-3xl leading-tight break-words sm:text-4xl lg:text-5xl">{bookingTitle(booking)}</h1>
           {booking.event_name && <p className="text-[15px] text-slate-dark">{clientName}</p>}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={booking.status} />
             {booking.room ? (
               <Badge tone="petrol">{booking.room.name}</Badge>
             ) : (
               <Badge tone="neutral">Sala da assegnare</Badge>
             )}
+            <Badge tone="neutral">{totalCovers} coperti</Badge>
           </div>
         </div>
 
@@ -146,8 +158,76 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         )}
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <div className="flex flex-col gap-6">
+      {/* Il menù è il dato principale dell'evento: blocco più prominente, subito dopo l'intestazione. */}
+      <section
+        aria-labelledby="menu-title"
+        className="flex flex-col gap-6 rounded-[2px] border border-sand border-t-[3px] border-t-petrol bg-paper p-5 shadow-sm shadow-ink/5 sm:p-8"
+      >
+        <header className="flex flex-col gap-3 border-b border-sand pb-6">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Menù scelto</p>
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <h2 id="menu-title" className="text-3xl leading-tight break-words sm:text-4xl">
+              {menuName}
+            </h2>
+            {booking.menu && (
+              <p className="text-[15px] tabular-nums text-slate-dark">
+                {formatEUR(booking.menu.price_per_person)} a persona
+              </p>
+            )}
+          </div>
+        </header>
+
+        {dishesEditable ? (
+          <DishesEditor
+            key={dishesVersion}
+            bookingId={booking.id}
+            dishes={booking.dishes}
+            hasMenu={booking.menu_id !== null}
+          />
+        ) : (
+          <CourseList items={booking.dishes} />
+        )}
+
+        {booking.kids_menu && (
+          <div className="flex flex-col gap-5 border-t border-sand pt-6">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Menù bambini</p>
+              <p className="text-[15px] text-slate-dark">
+                <span className="font-medium text-ink">{booking.kids_menu.name}</span>
+                {" · "}
+                {formatEUR(booking.kids_menu.price_per_person)} a bambino
+              </p>
+            </div>
+            <CourseList items={booking.kids_menu.items} />
+          </div>
+        )}
+      </section>
+
+      {booking.allergies.length > 0 && (
+        <section
+          aria-labelledby="allergie-title"
+          className="flex flex-col gap-5 rounded-[2px] border-l-[3px] border-danger bg-danger/5 p-5 sm:p-7"
+        >
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-danger">Attenzione</p>
+            <h2 id="allergie-title" className="text-2xl">
+              Allergie e patologie
+            </h2>
+          </div>
+          <ul className="flex flex-col gap-4">
+            {booking.allergies.map((allergy) => (
+              <li key={allergy.id} className="flex flex-col gap-1 text-[15px] leading-snug text-ink break-words">
+                <span className="font-medium">{allergy.condition}</span>
+                {allergy.subject_name && <span className="text-slate-dark">Per: {allergy.subject_name}</span>}
+                {allergy.notes && <span className="text-[14px] text-slate-dark">{allergy.notes}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="grid items-start gap-8 lg:grid-cols-2">
+        <div className="flex flex-col gap-8">
           <DetailCard eyebrow="Coperti" title="Numeri dell’evento">
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <CoverTile label="Adulti" value={booking.adults} />
@@ -156,10 +236,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               <CoverTile label="Totale coperti" value={totalCovers} emphasis />
             </dl>
             {covers && (
-              <div className="no-print border-t border-sand pt-5">
-                <p className="mb-4 text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">
-                  Modifica coperti
-                </p>
+              <div className="no-print flex flex-col gap-6 border-t border-sand pt-6">
+                <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Modifica coperti</p>
                 <CoversEditor
                   key={`${booking.adults}-${booking.children}-${booking.kids_menus}`}
                   bookingId={booking.id}
@@ -171,94 +249,63 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             )}
           </DetailCard>
 
-          {booking.allergies.length > 0 && (
-            <section
-              aria-labelledby="allergie-title"
-              className="flex flex-col gap-4 rounded-[2px] border-l-[3px] border-danger bg-danger/5 p-5 sm:p-6"
-            >
-              <div className="flex flex-col gap-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-danger">Attenzione</p>
-                <h2 id="allergie-title" className="text-2xl">
-                  Allergie e patologie
-                </h2>
-              </div>
-              <ul className="flex flex-col gap-3">
-                {booking.allergies.map((allergy) => (
-                  <li key={allergy.id} className="text-[15px] leading-snug text-ink">
-                    <span className="font-medium">{allergy.condition}</span>
-                    {allergy.subject_name && <span className="text-slate-dark"> · {allergy.subject_name}</span>}
-                    {allergy.notes && <span className="block text-[14px] text-slate-dark">{allergy.notes}</span>}
+          <DetailCard eyebrow="Allestimento" title="Colori e descrizione">
+            {booking.setup_colors.length > 0 ? (
+              <ul className="flex flex-wrap gap-3" aria-label="Colori scelti">
+                {booking.setup_colors.map((name) => (
+                  <li
+                    key={name}
+                    className="inline-flex items-center gap-2 rounded-[2px] border border-sand bg-paper px-3 py-1.5 text-[14px] text-ink"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="size-3.5 rounded-full ring-1 ring-ink/25"
+                      style={{ backgroundColor: SETUP_COLOR_HEX[name as keyof typeof SETUP_COLOR_HEX] ?? "#B0B0B0" }}
+                    />
+                    {name}
                   </li>
                 ))}
               </ul>
-            </section>
-          )}
-
-          <DetailCard eyebrow="Menù" title="Menù e piatti">
-            <div className="flex flex-col gap-1">
-              <p className="text-[15px]">
-                <span className="font-medium text-ink">{booking.menu?.name ?? "Menù non selezionato"}</span>
-                {booking.menu && (
-                  <span className="text-slate-dark"> · {formatEUR(booking.menu.price_per_person)} a persona</span>
-                )}
-              </p>
-            </div>
-
-            {dishesEditable ? (
-              <DishesEditor
-                key={dishesVersion}
-                bookingId={booking.id}
-                dishes={booking.dishes}
-                hasMenu={booking.menu_id !== null}
-              />
             ) : (
-              <CourseList items={booking.dishes} />
+              <p className="text-[14px] text-slate">Nessun colore scelto.</p>
             )}
-
-            {booking.kids_menu && (
-              <div className="flex flex-col gap-3 border-t border-sand pt-4">
-                <p className="text-[15px]">
-                  <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Menù bambini </span>
-                  <span className="font-medium text-ink">{booking.kids_menu.name}</span>
-                  <span className="text-slate-dark"> · {formatEUR(booking.kids_menu.price_per_person)} a bambino</span>
-                </p>
-                <CourseList items={booking.kids_menu.items} />
-              </div>
+            {booking.setup_notes && (
+              <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">{booking.setup_notes}</p>
             )}
           </DetailCard>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           <DetailCard eyebrow="Cliente" title={clientName}>
-            <ul className="flex flex-col gap-3 text-[15px]">
-              <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Telefono</span>
+            <dl className="flex flex-col gap-4">
+              <InfoRow label="Telefono">
                 <a href={telHref(client.phone)} className="font-medium text-petrol underline-offset-4 hover:underline">
                   {client.phone}
                 </a>
-              </li>
+              </InfoRow>
               {client.email && (
-                <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Email</span>
-                  <a href={`mailto:${client.email}`} className="break-all text-petrol underline-offset-4 hover:underline">
+                <InfoRow label="Email">
+                  <a href={`mailto:${client.email}`} className="text-petrol underline-offset-4 hover:underline">
                     {client.email}
                   </a>
-                </li>
+                </InfoRow>
               )}
               {client.tax_code && (
-                <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Codice fiscale</span>
+                <InfoRow label="Codice fiscale">
                   <span className="font-mono text-[14px]">{client.tax_code}</span>
-                </li>
+                </InfoRow>
               )}
               {client.vat_number && (
-                <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">P.IVA</span>
+                <InfoRow label="P.IVA">
                   <span className="font-mono text-[14px]">{client.vat_number}</span>
-                </li>
+                </InfoRow>
               )}
-              {client.notes && <li className="text-[14px] text-slate-dark">{client.notes}</li>}
-            </ul>
+              {client.notes && (
+                <InfoRow label="Note cliente">
+                  <span className="text-[14px] text-slate-dark">{client.notes}</span>
+                </InfoRow>
+              )}
+            </dl>
             <div className="no-print flex flex-wrap gap-3">
               <a href={telHref(client.phone)} className={buttonClasses("outline", "sm")}>
                 Chiama
@@ -279,31 +326,6 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             </div>
           </DetailCard>
 
-          <DetailCard eyebrow="Allestimento" title="Colori e descrizione">
-            {booking.setup_colors.length > 0 ? (
-              <ul className="flex flex-wrap gap-2" aria-label="Colori scelti">
-                {booking.setup_colors.map((name) => (
-                  <li
-                    key={name}
-                    className="inline-flex items-center gap-2 rounded-btn border border-sand bg-paper px-2.5 py-1 text-[13px] text-ink"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-3.5 rounded-full ring-1 ring-ink/25"
-                      style={{ backgroundColor: SETUP_COLOR_HEX[name as keyof typeof SETUP_COLOR_HEX] ?? "#B0B0B0" }}
-                    />
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[14px] text-slate">Nessun colore scelto.</p>
-            )}
-            {booking.setup_notes && (
-              <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">{booking.setup_notes}</p>
-            )}
-          </DetailCard>
-
           {booking.notes && (
             <DetailCard eyebrow="Note" title="Note interne">
               <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">{booking.notes}</p>
@@ -319,8 +341,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   {quotes.map((quote) => {
                     const totals = computeQuoteTotals(quote);
                     return (
-                      <li key={quote.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-col">
+                      <li key={quote.id} className="flex flex-col gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-1">
                           <p className="font-medium text-ink">n. {quote.number}</p>
                           <p className="text-[13px] text-slate-dark">
                             Emesso il {formatIt(toDate(quote.issued_at), "d MMM yyyy")} · {formatEUR(totals.total)} IVA inclusa
@@ -342,7 +364,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   })}
                 </ul>
               )}
-              <div className="no-print border-t border-sand pt-5">
+              <div className="no-print border-t border-sand pt-6">
                 <CreateQuoteButton bookingId={booking.id} />
               </div>
             </DetailCard>

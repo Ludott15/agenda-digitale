@@ -654,7 +654,7 @@ export function BookingForm({
 
       {/* 03 · Coperti */}
       <FormSection id="sec-coperti" eyebrow="03 · Coperti" title="Quanti saranno">
-        <div className="grid gap-6 sm:grid-cols-3">
+        <div className="grid items-start gap-6 md:grid-cols-3 md:gap-8">
           <CountStepper
             id="adults"
             label="Adulti"
@@ -688,7 +688,7 @@ export function BookingForm({
       <FormSection id="sec-sala" eyebrow="04 · Sala" title="Dove si svolge">
         <fieldset className="flex flex-col gap-4">
           <legend className="sr-only">Sala</legend>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <ChoiceCard name="room_id" title="Da assegnare" checked={values.room_id === null} onSelect={() => patch({ room_id: null })}>
               <span className="text-[14px] text-slate-dark">Sala non ancora scelta</span>
             </ChoiceCard>
@@ -755,7 +755,7 @@ export function BookingForm({
       <FormSection id="sec-menu" eyebrow="06 · Menù" title="Scelta del menù">
         <div className="flex flex-col gap-3">
           <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Menù adulti</p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <ChoiceCard name="menu_id" title="Da definire" checked={values.menu_id === null} onSelect={() => patch({ menu_id: null })}>
               <span className="text-[14px] text-slate-dark">Nessun menù per ora</span>
             </ChoiceCard>
@@ -774,7 +774,7 @@ export function BookingForm({
 
         <div className="flex flex-col gap-3">
           <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Menù bambini</p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <ChoiceCard name="kids_menu_id" title="Nessuno" checked={values.kids_menu_id === null} onSelect={() => patch({ kids_menu_id: null })}>
               <span className="text-[14px] text-slate-dark">Nessun menù bambini</span>
             </ChoiceCard>
