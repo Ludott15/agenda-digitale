@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { StaleDeployGuard } from "@/components/StaleDeployGuard";
 import "./globals.css";
 
 const geist = Geist({
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className="min-h-dvh bg-paper font-sans text-ink antialiased">
         {children}
         <ServiceWorkerRegister />
+        <StaleDeployGuard />
       </body>
     </html>
   );
