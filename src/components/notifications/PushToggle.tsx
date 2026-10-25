@@ -9,6 +9,24 @@ type PushState = "checking" | "unsupported" | "ios-install" | "unconfigured" | "
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
+/** Chiave pubblica VAPID in base64url: una chiave P-256 non compressa è lunga 87 caratteri. */
+const VAPID_KEY_PATTERN = /^[A-Za-z0-9_-]{80,100}$/;
+const VAPID_VALID = !!VAPID_PUBLIC_KEY && VAPID_KEY_PATTERN.test(VAPID_PUBLIC_KEY);
+
+const UNCONFIGURED_MESSAGE = "Le notifiche non sono ancora configurate sul server. Avvisa l’amministratore.";
+const SW_READY_TIMEOUT_MS = 8000;
+
+/** Errore di supporto: il service worker non diventa attivo entro il tempo massimo. */
+const SW_TIMEOUT_NAME = "ServiceWorkerTimeout";
+
+/** Errore di salvataggio della subscription lato server. */
+class SaveSubscriptionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SaveSubscriptionError";
+  }
+}
+
 /** Chiave VAPID (base64url) in ArrayBuffer per pushManager.subscribe. */
 function urlBase64ToApplicationKey(base64: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -18,6 +36,11 @@ function urlBase64ToApplicationKey(base64: string): ArrayBuffer {
   const bytes = new Uint8Array(buffer);
   for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
   return buffer;
+}
+
+function errorName(err: unknown): string {
+  if (typeof err === "object" && err !== null && "name" in err) return String((err as { name: unknown }).name);
+  return typeof err;
 }
 
 function isIosDevice(): boolean {
@@ -31,13 +54,83 @@ function isStandalone(): boolean {
   );
 }
 
+/** Attende il service worker con un tetto di tempo: senza timeout la UI resterebbe bloccata. */
+function serviceWorkerReady(): Promise<ServiceWorkerRegistration> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      const error = new Error("Service worker non pronto");
+      error.name = SW_TIMEOUT_NAME;
+      reject(error);
+    }, SW_READY_TIMEOUT_MS);
+    navigator.serviceWorker.ready.then(
+      (reg) => {
+        window.clearTimeout(timer);
+        resolve(reg);
+      },
+      (err: unknown) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/** True se la subscription esistente è stata creata con la stessa chiave applicationServerKey. */
+function sameApplicationServerKey(sub: PushSubscription, key: ArrayBuffer): boolean {
+  const current = sub.options?.applicationServerKey;
+  if (!current) return true;
+  const a = new Uint8Array(current);
+  const b = new Uint8Array(key);
+  if (a.length !== b.length) return false;
+  return a.every((byte, i) => byte === b[i]);
+}
+
+/**
+ * Crea la subscription. Se il browser ne conserva una creata con un'altra chiave VAPID
+ * (cambio di chiave sul server), la rimuove e riprova una volta.
+ */
+async function subscribeWithRecovery(reg: ServiceWorkerRegistration, applicationServerKey: ArrayBuffer): Promise<PushSubscription> {
+  const existing = await reg.pushManager.getSubscription();
+  if (existing && !sameApplicationServerKey(existing, applicationServerKey)) {
+    await existing.unsubscribe();
+  }
+  const options: PushSubscriptionOptionsInit = { userVisibleOnly: true, applicationServerKey };
+  try {
+    return await reg.pushManager.subscribe(options);
+  } catch (err) {
+    if (errorName(err) !== "InvalidStateError") throw err;
+    const stale = await reg.pushManager.getSubscription();
+    if (stale) await stale.unsubscribe();
+    return reg.pushManager.subscribe(options);
+  }
+}
+
+/** Messaggio per l'utente in base alla causa reale del fallimento (il nome è loggato in console). */
+function describeEnableError(err: unknown): string {
+  const name = errorName(err);
+  if (name === SW_TIMEOUT_NAME) {
+    return "Servizio notifiche non attivo: chiudi e riapri l’app.";
+  }
+  if (name === "AbortError" || name === "InvalidAccessError" || name === "NotAllowedError") {
+    return "Il browser ha rifiutato l’iscrizione alle notifiche. Aggiorna Chrome e riprova; su telefono usa l’app installata dalla schermata Home.";
+  }
+  if (err instanceof SaveSubscriptionError) {
+    return `Iscrizione non salvata: ${err.message}`;
+  }
+  return "Non è stato possibile attivare le notifiche. Riprova tra poco.";
+}
+
+function isIosInBrowser(): boolean {
+  return isIosDevice() && !isStandalone();
+}
+
 /** Stato iniziale che non richiede la sottoscrizione: null = serve controllare il service worker. */
 function staticState(): PushState | null {
-  if (isIosDevice() && !isStandalone()) return "ios-install";
+  if (isIosInBrowser()) return "ios-install";
   if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
     return "unsupported";
   }
-  if (!VAPID_PUBLIC_KEY) return "unconfigured";
+  if (!VAPID_VALID) return "unconfigured";
   if (Notification.permission === "denied") return "denied";
   return null;
 }
@@ -59,12 +152,13 @@ export function PushToggle() {
         cancelled = true;
       };
     }
-    navigator.serviceWorker.ready
+    serviceWorkerReady()
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => {
         if (!cancelled) setState(sub ? "on" : "off");
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        console.error("[push] stato iniziale non leggibile:", errorName(err), err);
         if (!cancelled) setState("off");
       });
     return () => {
@@ -74,7 +168,12 @@ export function PushToggle() {
 
   // Il permesso va chiesto dentro il gesto dell'utente: nessun await prima di requestPermission().
   const enable = () => {
-    if (!VAPID_PUBLIC_KEY) return;
+    if (!VAPID_PUBLIC_KEY || !VAPID_VALID) {
+      console.error("[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY mancante o non valida");
+      setState("unconfigured");
+      return;
+    }
+    const publicKey = VAPID_PUBLIC_KEY;
     setBusy(true);
     setError(null);
     Notification.requestPermission()
@@ -87,15 +186,12 @@ export function PushToggle() {
           setState("off");
           return;
         }
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToApplicationKey(VAPID_PUBLIC_KEY),
-        });
+        const reg = await serviceWorkerReady();
+        const sub = await subscribeWithRecovery(reg, urlBase64ToApplicationKey(publicKey));
         const json = sub.toJSON();
         if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
           await sub.unsubscribe();
-          throw new Error("Iscrizione non valida");
+          throw new Error("Iscrizione non valida: chiavi mancanti");
         }
         const saved = await savePushSubscription(
           { endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } },
@@ -103,12 +199,13 @@ export function PushToggle() {
         );
         if (!saved.ok) {
           await sub.unsubscribe();
-          throw new Error(saved.error);
+          throw new SaveSubscriptionError(saved.error);
         }
         setState("on");
       })
-      .catch(() => {
-        setError("Non è stato possibile attivare le notifiche. Riprova tra poco.");
+      .catch((err: unknown) => {
+        console.error("[push] attivazione fallita:", errorName(err), err);
+        setError(describeEnableError(err));
       })
       .finally(() => setBusy(false));
   };
@@ -117,7 +214,7 @@ export function PushToggle() {
     setBusy(true);
     setError(null);
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await serviceWorkerReady();
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
         const endpoint = sub.endpoint;
@@ -125,7 +222,8 @@ export function PushToggle() {
         await deletePushSubscription(endpoint);
       }
       setState("off");
-    } catch {
+    } catch (err: unknown) {
+      console.error("[push] disattivazione fallita:", errorName(err), err);
       setError("Non è stato possibile disattivare le notifiche. Riprova.");
     } finally {
       setBusy(false);
@@ -139,14 +237,14 @@ export function PushToggle() {
   }
 
   if (state === "unconfigured") {
-    return <p className="text-[13px] leading-relaxed text-slate-dark">Le notifiche push non sono ancora configurate.</p>;
+    return <p className="text-[13px] leading-relaxed text-slate-dark">{UNCONFIGURED_MESSAGE}</p>;
   }
 
   if (state === "ios-install") {
     return (
-      <div className="flex flex-col gap-2 rounded-btn bg-cream/70 px-4 py-3">
-        <p className="text-[14px] font-medium text-ink">Installa l’app per ricevere le notifiche</p>
-        <p className="text-[13px] leading-relaxed text-slate-dark">
+      <div className="flex min-w-0 flex-col gap-2 rounded-btn bg-cream/70 px-4 py-3">
+        <p className="break-words text-[14px] font-medium text-ink">Installa l’app per ricevere le notifiche</p>
+        <p className="break-words text-[13px] leading-relaxed text-slate-dark">
           Tocca Condividi e poi «Aggiungi alla schermata Home». Apri l’app dalla nuova icona e attiva le notifiche da qui.
         </p>
       </div>
@@ -162,7 +260,7 @@ export function PushToggle() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-3">
       {state === "on" ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="inline-flex items-center gap-2 text-[14px] font-medium text-success">

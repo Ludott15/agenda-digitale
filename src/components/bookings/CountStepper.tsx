@@ -53,8 +53,8 @@ export function CountStepper({ id, label, value, onChange, min = 0, max, hint, e
   const displayed = draft ?? String(value);
 
   return (
-    <div className="flex flex-col gap-2">
-      <label id={labelId} htmlFor={id} className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <label id={labelId} htmlFor={id} className="min-w-0 break-words text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">
         {label}
       </label>
 
@@ -62,7 +62,7 @@ export function CountStepper({ id, label, value, onChange, min = 0, max, hint, e
         role="group"
         aria-labelledby={labelId}
         className={cn(
-          "flex h-11 w-full items-stretch overflow-hidden rounded-[2px] border bg-paper transition-colors duration-200 focus-within:ring-2 focus-within:ring-petrol/40",
+          "flex h-11 w-full min-w-0 items-stretch overflow-hidden rounded-[2px] border bg-paper transition-colors duration-200 focus-within:ring-2 focus-within:ring-petrol/40",
           error ? "border-danger" : "border-slate/70 hover:border-slate",
         )}
       >
@@ -98,7 +98,7 @@ export function CountStepper({ id, label, value, onChange, min = 0, max, hint, e
           }}
           onBlur={commit}
           onKeyDown={handleKeyDown}
-          className="min-w-0 flex-1 bg-transparent px-1 text-center text-xl font-medium tabular-nums text-ink focus:outline-none"
+          className="w-full min-w-0 flex-1 bg-transparent px-1 text-center text-xl font-medium tabular-nums text-ink focus:outline-none"
         />
 
         <button
@@ -117,7 +117,7 @@ export function CountStepper({ id, label, value, onChange, min = 0, max, hint, e
 
       <p
         id={error ? errorId : hint ? hintId : undefined}
-        className={cn("min-h-5 text-[13px]", error ? "text-danger" : "text-slate")}
+        className={cn("min-h-5 min-w-0 break-words text-[13px]", error ? "text-danger" : "text-slate")}
       >
         {error ?? hint ?? ""}
       </p>

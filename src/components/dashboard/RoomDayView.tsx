@@ -14,8 +14,8 @@ export interface RoomDayViewProps {
   selectedDay: string;
   todayIso: string;
   bookings: BookingListItem[];
-  /** URL del selettore per ciascun giorno. */
-  dayHref: (iso: string) => string;
+  /** Selezione di un giorno (stato locale, nessuna navigazione). */
+  onSelectDay: (iso: string) => void;
 }
 
 /** Etichetta sopra il giorno: "Oggi", "Domani" oppure "Giorno selezionato". */
@@ -27,7 +27,7 @@ function dayEyebrow(selectedDay: string, todayIso: string): string {
 }
 
 /** Vista mobile delle sale: selettore dei giorni scrollabile e, per il giorno scelto, l'elenco delle sale. */
-export function RoomDayView({ rooms, days, selectedDay, todayIso, bookings, dayHref }: RoomDayViewProps) {
+export function RoomDayView({ rooms, days, selectedDay, todayIso, bookings, onSelectDay }: RoomDayViewProps) {
   const dayBookings = bookings.filter((b) => b.event_date === selectedDay);
   const byRoom = new Map<string, BookingListItem>();
   for (const booking of dayBookings) {
@@ -47,12 +47,12 @@ export function RoomDayView({ rooms, days, selectedDay, todayIso, bookings, dayH
             const count = bookings.filter((b) => b.event_date === iso).length;
             return (
               <li key={iso}>
-                <Link
-                  href={dayHref(iso)}
-                  scroll={false}
-                  aria-current={active ? "date" : undefined}
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onSelectDay(iso)}
                   className={cn(
-                    "flex min-w-[4.25rem] flex-col items-center gap-0.5 rounded-btn border px-3 py-2.5 transition-colors duration-200",
+                    "flex min-w-[4.25rem] flex-col items-center gap-0.5 rounded-btn border px-3 py-2.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petrol focus-visible:ring-offset-2 focus-visible:ring-offset-paper",
                     active ? "border-petrol bg-petrol text-paper" : "border-sand bg-paper text-ink hover:bg-cream",
                   )}
                 >
@@ -71,7 +71,7 @@ export function RoomDayView({ rooms, days, selectedDay, todayIso, bookings, dayH
                     {iso === todayIso ? "oggi, " : ""}
                     {count === 0 ? "nessun evento" : `${count} ${count === 1 ? "evento" : "eventi"}`}
                   </span>
-                </Link>
+                </button>
               </li>
             );
           })}

@@ -57,7 +57,7 @@ export function MobileAgenda({ selected, today, byDate, isAdmin, onNavigate }: M
           ) : (
             <div className="flex flex-col gap-4">
               {items.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} variant="full" dishes="collapsible" />
+                <BookingCard key={booking.id} booking={booking} variant="full" dishes="collapsible" wholeCardLink />
               ))}
             </div>
           )}

@@ -125,8 +125,8 @@ export function DishesEditor({ bookingId, dishes, hasMenu }: DishesEditorProps) 
           {rows.map((row, index) => {
             const rowError = rowErrors[row.key];
             return (
-              <li key={row.key} className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                <div className="sm:w-40 sm:shrink-0">
+              <li key={row.key} className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start">
+                <div className="min-w-0 sm:w-40 sm:shrink-0">
                   <Select
                     aria-label="Portata"
                     value={row.course}
@@ -139,25 +139,27 @@ export function DishesEditor({ bookingId, dishes, hasMenu }: DishesEditorProps) 
                     ))}
                   </Select>
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <Input
-                    aria-label={`Nome piatto (${COURSE_LABELS[row.course]})`}
-                    invalid={!!rowError}
-                    value={row.name}
-                    onChange={(e) => updateRow(row.key, { name: e.target.value })}
-                  />
-                  {rowError && <p className="text-[13px] text-danger">{rowError}</p>}
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="sm" aria-label="Sposta su" disabled={!canUp(index)} onClick={() => moveRow(index, -1)}>
-                    <ArrowUp aria-hidden="true" className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" aria-label="Sposta giù" disabled={!canDown(index)} onClick={() => moveRow(index, 1)}>
-                    <ArrowDown aria-hidden="true" className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" aria-label={`Rimuovi ${row.name || "piatto"}`} onClick={() => removeRow(row.key)}>
-                    <Trash2 aria-hidden="true" className="size-4" />
-                  </Button>
+                <div className="flex min-w-0 items-start gap-2">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <Input
+                      aria-label={`Nome piatto (${COURSE_LABELS[row.course]})`}
+                      invalid={!!rowError}
+                      value={row.name}
+                      onChange={(e) => updateRow(row.key, { name: e.target.value })}
+                    />
+                    {rowError && <p className="break-words text-[13px] text-danger">{rowError}</p>}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button variant="ghost" size="sm" aria-label="Sposta su" disabled={!canUp(index)} onClick={() => moveRow(index, -1)}>
+                      <ArrowUp aria-hidden="true" className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" aria-label="Sposta giù" disabled={!canDown(index)} onClick={() => moveRow(index, 1)}>
+                      <ArrowDown aria-hidden="true" className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" aria-label={`Rimuovi ${row.name || "piatto"}`} onClick={() => removeRow(row.key)}>
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </Button>
+                  </div>
                 </div>
               </li>
             );
@@ -165,8 +167,8 @@ export function DishesEditor({ bookingId, dishes, hasMenu }: DishesEditorProps) 
         </ol>
       )}
 
-      <div className="flex flex-col gap-2 rounded-btn border border-dashed border-slate/40 p-3 sm:flex-row">
-        <div className="sm:w-40 sm:shrink-0">
+      <div className="flex min-w-0 flex-col gap-2 rounded-btn border border-dashed border-slate/40 p-3 sm:flex-row">
+        <div className="min-w-0 sm:w-40 sm:shrink-0">
           <Select aria-label="Portata del nuovo piatto" value={newCourse} onChange={(e) => setNewCourse(e.target.value as Course)}>
             {COURSE_ORDER.map((c) => (
               <option key={c} value={c}>
@@ -180,9 +182,9 @@ export function DishesEditor({ bookingId, dishes, hasMenu }: DishesEditorProps) 
           placeholder="Nome del piatto"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          className="flex-1"
+          className="min-w-0 sm:flex-1"
         />
-        <Button variant="outline" size="md" onClick={addRow}>
+        <Button variant="outline" size="md" onClick={addRow} className="w-full sm:w-auto">
           <Plus aria-hidden="true" className="size-4" />
           Aggiungi
         </Button>
@@ -207,7 +209,7 @@ export function DishesEditor({ bookingId, dishes, hasMenu }: DishesEditorProps) 
           />
         )}
         {saved && (
-          <span role="status" className="text-[13px] text-success">
+          <span role="status" className="min-w-0 text-[13px] text-success">
             Piatti salvati.
           </span>
         )}

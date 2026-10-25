@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { addDays, endOfWeek } from "date-fns";
 import { formatIt, toDate, toISO, todayISO, capitalize } from "@/components/agenda/agenda-utils";
 import { BookingCard } from "@/components/bookings/BookingCard";
 import { formatChangeTimestamp } from "@/components/bookings/change-labels";
-import { RoomDayView } from "@/components/dashboard/RoomDayView";
-import { RoomOccupancyMatrix } from "@/components/dashboard/RoomOccupancyMatrix";
-import { WeekNav } from "@/components/dashboard/WeekNav";
-import { resolveWeekStart, weekLabel, weekRange } from "@/components/dashboard/week";
-import { ButtonLink, Card, EmptyState, PageHeader, StatusLegend } from "@/components/ui";
+import { WeekOccupancy } from "@/components/dashboard/WeekOccupancy";
+import { resolveWeekStart, weekRange } from "@/components/dashboard/week";
+import { ButtonLink, Card, EmptyState, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import {
   getBookingsInRange,
@@ -54,7 +50,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const currentWeekStart = resolveWeekStart(undefined, today);
   const weekStart = resolveWeekStart(params.week, today);
   const week = weekRange(weekStart);
-  const weekIso = week.startIso;
   const weekDays = week.days;
   const selectedDay =
     params.day && weekDays.includes(params.day)
@@ -62,7 +57,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       : weekDays.includes(today)
         ? today
         : weekDays[0];
-  const isCurrentWeek = week.startIso === toISO(currentWeekStart);
 
   const [stats, upcoming, rooms, weekBookings, deletions] = await Promise.all([
     getDashboardStats(),
@@ -89,16 +83,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       hint: "Adulti e bambini nei prossimi sette giorni",
     },
     {
-      label: "Opzioni da confermare",
+      label: "In attesa di conferma",
       value: stats.pendingOptions,
-      hint: stats.pendingOptions > 0 ? "Richiedono una conferma" : "Nessuna opzione in sospeso",
+      hint: stats.pendingOptions > 0 ? "Richiedono una conferma" : "Nessuna prenotazione in attesa",
       highlight: stats.pendingOptions > 0,
     },
   ];
 
   const activeRooms = rooms.filter((room) => room.active);
-  const previousWeekIso = toISO(addDays(week.start, -7));
-  const nextWeekIso = toISO(addDays(week.start, 7));
 
   return (
     <div className="flex min-w-0 flex-col gap-8 lg:gap-10">
@@ -145,51 +137,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         )}
       </section>
 
-      <section aria-labelledby="sale-settimana" className="flex min-w-0 flex-col gap-5">
-        <div className="flex flex-col gap-4 border-b border-sand pb-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">
-              {weekLabel(weekStart, currentWeekStart)}
-            </p>
-            <h2 id="sale-settimana" className="text-2xl">
-              Occupazione sale
-            </h2>
-            <p className="text-[13px] text-slate-dark">
-              {formatIt(week.start, "d MMMM")} – {formatIt(endOfWeek(week.start, { weekStartsOn: 1 }), "d MMMM yyyy")}
-            </p>
-          </div>
-          <WeekNav
-            previousHref={`/dashboard?week=${previousWeekIso}`}
-            nextHref={`/dashboard?week=${nextWeekIso}`}
-            todayHref="/dashboard"
-            isCurrentWeek={isCurrentWeek}
-          />
-        </div>
-
-        <StatusLegend />
-
-        <div className="hidden min-w-0 lg:block">
-          <RoomOccupancyMatrix rooms={activeRooms} days={weekDays} bookings={weekBookings} />
-        </div>
-
-        <div className="min-w-0 lg:hidden">
-          <RoomDayView
-            rooms={activeRooms}
-            days={weekDays}
-            selectedDay={selectedDay}
-            todayIso={today}
-            bookings={weekBookings}
-            dayHref={(iso) => `/dashboard?week=${weekIso}&day=${iso}`}
-          />
-        </div>
-
-        <p className="text-[13px] text-slate-dark">
-          Le sale piene sono occupate: coperti sulla capienza. Tocca o clicca per aprire la prenotazione.{" "}
-          <Link href="/catalogo" className="font-medium text-petrol underline-offset-2 hover:underline">
-            Gestisci sale e menù
-          </Link>
-        </p>
-      </section>
+      <WeekOccupancy
+        key={`${week.startIso}|${selectedDay}|${weekBookings.map((b) => `${b.id}:${b.updated_at}`).join(",")}`}
+        rooms={activeRooms}
+        todayIso={today}
+        currentWeekIso={toISO(currentWeekStart)}
+        initialWeekStart={week.startIso}
+        initialDays={weekDays}
+        initialBookings={weekBookings}
+        initialSelectedDay={selectedDay}
+      />
 
       <section aria-labelledby="eliminazioni-recenti" className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-1 border-b border-sand pb-3">

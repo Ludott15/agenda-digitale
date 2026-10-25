@@ -51,10 +51,10 @@ function DetailCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("flex flex-col gap-6 p-5 sm:p-6", className)}>
+    <Card className={cn("flex min-w-0 flex-col gap-6 p-5 sm:p-6", className)}>
       <header className="flex flex-col gap-2 border-b border-sand pb-4">
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">{eyebrow}</p>
-        <h2 className="text-2xl break-words">{title}</h2>
+        <h2 className="text-2xl wrap-anywhere">{title}</h2>
       </header>
       {children}
     </Card>
@@ -65,11 +65,11 @@ function CoverTile({ label, value, emphasis = false }: { label: string; value: n
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-[2px] border p-4",
+        "flex min-w-0 flex-col gap-2 rounded-[2px] border p-4",
         emphasis ? "border-petrol bg-petrol text-paper" : "border-sand bg-cream/40 text-ink",
       )}
     >
-      <dt className={cn("text-[11px] font-medium uppercase tracking-[0.14em]", emphasis ? "text-sand" : "text-bronze")}>
+      <dt className={cn("min-w-0 break-words text-[11px] font-medium uppercase tracking-[0.14em]", emphasis ? "text-sand" : "text-bronze")}>
         {label}
       </dt>
       <dd className="font-serif text-4xl tabular-nums leading-none sm:text-5xl">{value}</dd>
@@ -80,9 +80,9 @@ function CoverTile({ label, value, emphasis = false }: { label: string; value: n
 /** Riga etichetta + valore della scheda cliente: etichette su una colonna fissa, allineate. */
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-4">
+    <div className="grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-4">
       <dt className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark sm:pt-0.5">{label}</dt>
-      <dd className="min-w-0 break-words text-[15px] text-ink">{children}</dd>
+      <dd className="min-w-0 wrap-anywhere text-[15px] text-ink">{children}</dd>
     </div>
   );
 }
@@ -134,7 +134,7 @@ export default async function BookingDetailPage({
 
   return (
     <div className="flex flex-col gap-10">
-      <header className="flex flex-col gap-6 border-b border-sand pb-10">
+      <header className="flex min-w-0 flex-col gap-6 border-b border-sand pb-10">
         <Link
           href={`/agenda?date=${booking.event_date}&view=day`}
           className="w-fit rounded-[2px] text-[13px] font-medium text-petrol underline-offset-4 hover:underline"
@@ -143,12 +143,12 @@ export default async function BookingDetailPage({
         </Link>
 
         <div className="flex flex-col gap-3">
-          <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-bronze">
+          <p className="wrap-anywhere text-[12px] font-medium uppercase tracking-[0.14em] text-bronze">
             {capitalize(formatIt(eventDate, "EEEE d MMMM yyyy"))}
             {time ? ` · ore ${time}` : ""}
           </p>
-          <h1 className="text-3xl leading-tight break-words sm:text-4xl lg:text-5xl">{bookingTitle(booking)}</h1>
-          {booking.event_name && <p className="text-[15px] text-slate-dark">{clientName}</p>}
+          <h1 className="text-3xl leading-tight wrap-anywhere sm:text-4xl lg:text-5xl">{bookingTitle(booking)}</h1>
+          {booking.event_name && <p className="wrap-anywhere text-[15px] text-slate-dark">{clientName}</p>}
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={booking.status} />
             {booking.room ? (
@@ -173,12 +173,12 @@ export default async function BookingDetailPage({
       {/* Il menù è il dato principale dell'evento: blocco più prominente, subito dopo l'intestazione. */}
       <section
         aria-labelledby="menu-title"
-        className="flex flex-col gap-6 rounded-[2px] border border-sand border-t-[3px] border-t-petrol bg-paper p-5 shadow-sm shadow-ink/5 sm:p-8"
+        className="flex min-w-0 flex-col gap-6 rounded-[2px] border border-sand border-t-[3px] border-t-petrol bg-paper p-5 shadow-sm shadow-ink/5 sm:p-8"
       >
         <header className="flex flex-col gap-3 border-b border-sand pb-6">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Menù scelto</p>
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-            <h2 id="menu-title" className="text-3xl leading-tight break-words sm:text-4xl">
+          <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <h2 id="menu-title" className="min-w-0 text-3xl leading-tight wrap-anywhere sm:text-4xl">
               {menuName}
             </h2>
             {booking.menu && (
@@ -202,9 +202,9 @@ export default async function BookingDetailPage({
 
         {booking.kids_menu && (
           <div className="flex flex-col gap-5 border-t border-sand pt-6">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Menù bambini</p>
-              <p className="text-[15px] text-slate-dark">
+              <p className="min-w-0 wrap-anywhere text-[15px] text-slate-dark">
                 <span className="font-medium text-ink">{booking.kids_menu.name}</span>
                 {" · "}
                 {formatEUR(booking.kids_menu.price_per_person)} a bambino
@@ -218,7 +218,7 @@ export default async function BookingDetailPage({
       {booking.allergies.length > 0 && (
         <section
           aria-labelledby="allergie-title"
-          className="flex flex-col gap-5 rounded-[2px] border-l-[3px] border-danger bg-danger/5 p-5 sm:p-7"
+          className="flex min-w-0 flex-col gap-5 rounded-[2px] border-l-[3px] border-danger bg-danger/5 p-5 sm:p-7"
         >
           <div className="flex flex-col gap-2">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-danger">Attenzione</p>
@@ -238,10 +238,10 @@ export default async function BookingDetailPage({
         </section>
       )}
 
-      <div className="grid items-start gap-8 lg:grid-cols-2">
-        <div className="flex flex-col gap-8">
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-8">
           <DetailCard eyebrow="Coperti" title="Numeri dell’evento">
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <dl className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
               <CoverTile label="Adulti" value={booking.adults} />
               <CoverTile label="Bambini" value={booking.children} />
               <CoverTile label="Menù bambini" value={booking.kids_menus} />
@@ -267,7 +267,7 @@ export default async function BookingDetailPage({
                 {booking.setup_colors.map((name) => (
                   <li
                     key={name}
-                    className="inline-flex items-center gap-2 rounded-[2px] border border-sand bg-paper px-3 py-1.5 text-[14px] text-ink"
+                    className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-[2px] border border-sand bg-paper px-3 py-1.5 text-[14px] text-ink wrap-anywhere"
                   >
                     <span
                       aria-hidden="true"
@@ -282,39 +282,39 @@ export default async function BookingDetailPage({
               <p className="text-[14px] text-slate">Nessun colore scelto.</p>
             )}
             {booking.setup_notes && (
-              <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">{booking.setup_notes}</p>
+              <p className="whitespace-pre-line wrap-anywhere text-[15px] leading-relaxed text-ink">{booking.setup_notes}</p>
             )}
           </DetailCard>
         </div>
 
-        <div className="flex flex-col gap-8">
+        <div className="flex min-w-0 flex-col gap-8">
           <DetailCard eyebrow="Cliente" title={clientName}>
-            <dl className="flex flex-col gap-4">
+            <dl className="flex min-w-0 flex-col gap-4">
               <InfoRow label="Telefono">
-                <a href={telHref(client.phone)} className="font-medium text-petrol underline-offset-4 hover:underline">
+                <a href={telHref(client.phone)} className="wrap-anywhere font-medium text-petrol underline-offset-4 hover:underline">
                   {client.phone}
                 </a>
               </InfoRow>
               {client.email && (
                 <InfoRow label="Email">
-                  <a href={`mailto:${client.email}`} className="text-petrol underline-offset-4 hover:underline">
+                  <a href={`mailto:${client.email}`} className="wrap-anywhere text-petrol underline-offset-4 hover:underline">
                     {client.email}
                   </a>
                 </InfoRow>
               )}
               {client.tax_code && (
                 <InfoRow label="Codice fiscale">
-                  <span className="font-mono text-[14px]">{client.tax_code}</span>
+                  <span className="wrap-anywhere font-mono text-[14px]">{client.tax_code}</span>
                 </InfoRow>
               )}
               {client.vat_number && (
                 <InfoRow label="P.IVA">
-                  <span className="font-mono text-[14px]">{client.vat_number}</span>
+                  <span className="wrap-anywhere font-mono text-[14px]">{client.vat_number}</span>
                 </InfoRow>
               )}
               {client.notes && (
                 <InfoRow label="Note cliente">
-                  <span className="text-[14px] text-slate-dark">{client.notes}</span>
+                  <span className="wrap-anywhere text-[14px] text-slate-dark">{client.notes}</span>
                 </InfoRow>
               )}
             </dl>
@@ -342,7 +342,7 @@ export default async function BookingDetailPage({
 
           {booking.notes && (
             <DetailCard eyebrow="Note" title="Note interne">
-              <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">{booking.notes}</p>
+              <p className="whitespace-pre-line wrap-anywhere text-[15px] leading-relaxed text-ink">{booking.notes}</p>
             </DetailCard>
           )}
 
@@ -356,13 +356,13 @@ export default async function BookingDetailPage({
                     const totals = computeQuoteTotals(quote);
                     return (
                       <li key={quote.id} className="flex flex-col gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-col gap-1">
-                          <p className="font-medium text-ink">n. {quote.number}</p>
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <p className="wrap-anywhere font-medium text-ink">n. {quote.number}</p>
                           <p className="text-[13px] text-slate-dark">
                             Emesso il {formatIt(toDate(quote.issued_at), "d MMM yyyy")} · {formatEUR(totals.total)} IVA inclusa
                           </p>
                         </div>
-                        <div className="no-print flex flex-wrap gap-2">
+                        <div className="no-print flex min-w-0 flex-wrap gap-2">
                           <ButtonLink href={`/preventivi/${quote.id}`} variant="ghost" size="sm">
                             Apri
                           </ButtonLink>
@@ -378,7 +378,7 @@ export default async function BookingDetailPage({
                   })}
                 </ul>
               )}
-              <div className="no-print border-t border-sand pt-6">
+              <div className="no-print min-w-0 border-t border-sand pt-6">
                 <CreateQuoteButton bookingId={booking.id} />
               </div>
             </DetailCard>

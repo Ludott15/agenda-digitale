@@ -33,7 +33,7 @@ export function PaymentDraftFields({ idPrefix, draft, errors, onChange, disabled
   };
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Field label="Importo" htmlFor={id("amount")} required error={errors.amount}>
         <div className="relative">
           <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] text-slate-dark">

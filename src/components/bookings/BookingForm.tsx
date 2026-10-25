@@ -349,7 +349,7 @@ function ChoiceCard({
   return (
     <label
       className={cn(
-        "relative flex cursor-pointer flex-col gap-3 rounded-btn border bg-paper p-4 transition-colors duration-200 hover:border-slate focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-petrol",
+        "relative flex min-w-0 cursor-pointer flex-col gap-3 rounded-btn border bg-paper p-4 transition-colors duration-200 hover:border-slate focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-petrol",
         checked ? "border-petrol bg-petrol/5 ring-1 ring-petrol" : "border-sand",
       )}
     >
@@ -361,7 +361,7 @@ function ChoiceCard({
         className="sr-only"
       />
       <span className="flex items-start justify-between gap-3">
-        <span className="font-serif text-xl leading-tight text-ink">{title}</span>
+        <span className="min-w-0 wrap-anywhere font-serif text-xl leading-tight text-ink">{title}</span>
         {checked && <Check aria-hidden="true" className="size-5 shrink-0 text-petrol" />}
       </span>
       {children}
@@ -585,7 +585,7 @@ export function BookingForm({
             <div className="flex flex-col gap-4">
               {selectedClient && (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-btn border border-petrol bg-petrol/5 px-4 py-3">
-                  <p className="text-[15px] text-ink">
+                  <p className="min-w-0 wrap-anywhere text-[15px] text-ink">
                     <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-bronze">Selezionato</span>
                     <span className="block font-medium">
                       {selectedClient.first_name} {selectedClient.last_name} · {selectedClient.phone}
@@ -629,12 +629,12 @@ export function BookingForm({
                           aria-pressed={active}
                           onClick={() => patch({ clientId: c.id })}
                           className={cn(
-                            "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-cream",
+                            "flex w-full min-w-0 items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-cream",
                             active && "bg-petrol/5",
                           )}
                         >
-                          <span className="flex flex-col">
-                            <span className="font-medium text-ink">
+                          <span className="flex min-w-0 flex-col">
+                            <span className="wrap-anywhere font-medium text-ink">
                               {c.first_name} {c.last_name}
                             </span>
                             <span className="text-[13px] text-slate-dark">{c.phone}</span>
@@ -651,7 +651,7 @@ export function BookingForm({
               )}
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <Field label="Nome" htmlFor={idFor("new.first_name")} required error={first(errors["new.first_name"])}>
                 <Input id={idFor("new.first_name")} autoComplete="off" invalid={!!errors["new.first_name"]} aria-describedby={describedBy(idFor("new.first_name"), first(errors["new.first_name"]))} {...newClientInput("first_name")} />
               </Field>
@@ -685,7 +685,7 @@ export function BookingForm({
 
       {/* 02 · Evento */}
       <FormSection id="sec-evento" eyebrow="02 · Evento" title="Data e stato">
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field label="Nome evento" htmlFor="event_name" error={first(errors.event_name)}>
             <Input id="event_name" invalid={!!errors.event_name} aria-describedby={describedBy("event_name", first(errors.event_name))} value={values.event_name} onChange={(e) => patch({ event_name: e.target.value })} placeholder="es. Matrimonio Rossi" />
           </Field>
@@ -771,7 +771,7 @@ export function BookingForm({
 
       {/* 03 · Coperti */}
       <FormSection id="sec-coperti" eyebrow="03 · Coperti" title="Quanti saranno">
-        <div className="grid items-start gap-6 md:grid-cols-3 md:gap-8">
+        <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-3 md:gap-8">
           <CountStepper
             id="adults"
             label="Adulti"
@@ -805,7 +805,7 @@ export function BookingForm({
       <FormSection id="sec-sala" eyebrow="04 · Sala" title="Dove si svolge">
         <fieldset className="flex flex-col gap-4">
           <legend className="sr-only">Sala</legend>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <ChoiceCard name="room_id" title="Da assegnare" checked={values.room_id === null} onSelect={() => patch({ room_id: null })}>
               <span className="text-[14px] text-slate-dark">Sala non ancora scelta</span>
             </ChoiceCard>
@@ -872,7 +872,7 @@ export function BookingForm({
       <FormSection id="sec-menu" eyebrow="06 · Menù" title="Scelta del menù">
         <div className="flex flex-col gap-3">
           <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Menù adulti</p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <ChoiceCard name="menu_id" title="Da definire" checked={values.menu_id === null} onSelect={() => patch({ menu_id: null })}>
               <span className="text-[14px] text-slate-dark">Nessun menù per ora</span>
             </ChoiceCard>
@@ -891,7 +891,7 @@ export function BookingForm({
 
         <div className="flex flex-col gap-3">
           <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark">Menù bambini</p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <ChoiceCard name="kids_menu_id" title="Nessuno" checked={values.kids_menu_id === null} onSelect={() => patch({ kids_menu_id: null })}>
               <span className="text-[14px] text-slate-dark">Nessun menù bambini</span>
             </ChoiceCard>
@@ -924,7 +924,7 @@ export function BookingForm({
             const subjectId = idFor(`allergies.${index}.subject_name`);
             const notesId = idFor(`allergies.${index}.notes`);
             return (
-              <div key={row.key} className="grid gap-4 rounded-btn border border-sand bg-paper p-4 sm:grid-cols-2">
+              <div key={row.key} className="grid min-w-0 grid-cols-1 gap-4 rounded-btn border border-sand bg-paper p-4 sm:grid-cols-2">
                 <Field label="Soggetto" htmlFor={subjectId} hint="Lasciare vuoto se riguarda il cliente">
                   <Input id={subjectId} aria-describedby={describedBy(subjectId, undefined, true)} value={row.subject_name} onChange={(e) => updateAllergy(index, { subject_name: e.target.value })} placeholder="es. Maria, figlio…" />
                 </Field>

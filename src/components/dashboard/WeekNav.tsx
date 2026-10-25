@@ -1,59 +1,39 @@
-"use client";
-
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Link, { useLinkStatus } from "next/link";
 import { cn } from "@/components/ui/cn";
 
 export interface WeekNavProps {
-  previousHref: string;
-  nextHref: string;
-  todayHref: string;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
   isCurrentWeek: boolean;
 }
 
-/** Indicatore di caricamento dentro il link, mentre la settimana richiesta è in arrivo. */
-function PendingDot() {
-  const { pending } = useLinkStatus();
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "absolute right-1.5 top-1.5 size-1.5 rounded-full bg-bronze transition-opacity duration-200",
-        pending ? "opacity-100" : "opacity-0",
-      )}
-    />
-  );
-}
+const ICON_BUTTON =
+  "inline-flex size-10 items-center justify-center rounded-btn border border-sand bg-paper text-petrol transition-colors duration-200 hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petrol focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
-const ICON_LINK =
-  "relative inline-flex size-10 items-center justify-center rounded-btn border border-sand bg-paper text-petrol transition-colors duration-200 hover:bg-cream";
-
-/** Navigazione settimana precedente / oggi / successiva, con prefetch e senza salto di scroll. */
-export function WeekNav({ previousHref, nextHref, todayHref, isCurrentWeek }: WeekNavProps) {
+/** Navigazione settimana precedente / oggi / successiva, senza link: il cambio avviene lato client. */
+export function WeekNav({ onPrev, onNext, onToday, isCurrentWeek }: WeekNavProps) {
   return (
     <nav aria-label="Cambia settimana" className="flex items-center gap-2">
-      <Link href={previousHref} scroll={false} aria-label="Settimana precedente" className={ICON_LINK}>
+      <button type="button" onClick={onPrev} aria-label="Settimana precedente" className={ICON_BUTTON}>
         <ChevronLeft aria-hidden="true" className="size-5" />
-        <PendingDot />
-      </Link>
-      <Link
-        href={todayHref}
-        scroll={false}
+      </button>
+      <button
+        type="button"
+        onClick={onToday}
         aria-current={isCurrentWeek ? "date" : undefined}
         className={cn(
-          "relative inline-flex h-10 items-center rounded-btn border px-4 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-200",
+          "inline-flex h-10 items-center rounded-btn border px-4 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petrol focus-visible:ring-offset-2 focus-visible:ring-offset-paper",
           isCurrentWeek
             ? "border-petrol bg-petrol text-paper hover:bg-petrol-hover"
             : "border-petrol text-petrol hover:bg-petrol hover:text-paper",
         )}
       >
         Oggi
-        <PendingDot />
-      </Link>
-      <Link href={nextHref} scroll={false} aria-label="Settimana successiva" className={ICON_LINK}>
+      </button>
+      <button type="button" onClick={onNext} aria-label="Settimana successiva" className={ICON_BUTTON}>
         <ChevronRight aria-hidden="true" className="size-5" />
-        <PendingDot />
-      </Link>
+      </button>
     </nav>
   );
 }

@@ -27,10 +27,10 @@ export function Field({
 }: FieldProps) {
   const { hintId, errorId } = fieldIds(htmlFor);
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
       <label
         htmlFor={htmlFor}
-        className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark"
+        className="break-words text-[12px] font-medium uppercase tracking-[0.14em] text-slate-dark"
       >
         {label}
         {required && (

@@ -27,6 +27,8 @@ export interface BookingCardProps {
   /** Come mostrare il menù (piatti) nella variante full. */
   dishes?: "inline" | "collapsible" | "hidden";
   showDate?: boolean;
+  /** Variante full: tutta la card apre la prenotazione (stretched link); l'area piatti resta indipendente. */
+  wholeCardLink?: boolean;
   className?: string;
 }
 
@@ -73,6 +75,7 @@ export function BookingCard({
   variant = "compact",
   dishes = "inline",
   showDate = false,
+  wholeCardLink = false,
   className,
 }: BookingCardProps) {
   const href = `/prenotazioni/${b.id}`;
@@ -128,39 +131,46 @@ export function BookingCard({
       style={{ borderTopColor: STATUS_COLORS[b.status] }}
       aria-label={`Banchetto, stato ${STATUS_LABELS[b.status]}`}
       className={cn(
-        "flex flex-col gap-5 rounded-[2px] border border-sand border-t-[3px] bg-paper p-5 shadow-sm shadow-ink/5 sm:p-6",
+        "relative flex min-w-0 flex-col gap-5 rounded-[2px] border border-sand border-t-[3px] bg-paper p-5 shadow-sm shadow-ink/5 sm:p-6",
+        wholeCardLink &&
+          "cursor-pointer transition-colors duration-200 hover:bg-cream/40 active:bg-cream/70 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-petrol",
         b.status === "annullato" && "opacity-80",
         className,
       )}
     >
-      <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      <header className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <MenuLabel name={menuName} />
           <StatusDot status={b.status} />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">
             {dateLabel && <span>{dateLabel}</span>}
             {time && <span>ore {time}</span>}
             {b.room && <span>{b.room.name}</span>}
           </p>
-          <h3 className="font-serif text-xl leading-tight break-words">
+          <h3 className="font-serif text-xl leading-tight wrap-anywhere">
             <Link
               href={href}
-              className="rounded-[2px] underline-offset-4 hover:text-petrol hover:underline"
+              className={cn(
+                "rounded-[2px] underline-offset-4 hover:text-petrol hover:underline",
+                wholeCardLink
+                  ? "after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                  : "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol",
+              )}
             >
               {title}
             </Link>
           </h3>
           {b.event_name && (
-            <p className="break-words text-[14px] text-slate-dark">
+            <p className="wrap-anywhere text-[14px] text-slate-dark">
               {clientFullName(b)} · {b.client.phone}
             </p>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3">
           <p className="flex items-baseline gap-2" title="A = adulti, B = bambini">
             <span className="font-serif text-4xl leading-none tabular-nums text-ink">{totalCovers(b)}</span>
             <span className="text-[13px] text-slate-dark">
@@ -181,7 +191,7 @@ export function BookingCard({
 
       {hasDishes &&
         (dishes === "collapsible" ? (
-          <details className="group border-t border-sand pt-4">
+          <details className={cn("group border-t border-sand pt-4", wholeCardLink && "relative z-10")}>
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-[2px] text-[13px] font-medium text-petrol transition-colors hover:text-petrol-hover">
               Piatti del menù ({b.dishes.length})
               <ChevronDown aria-hidden="true" className="size-4 transition-transform duration-300 group-open:rotate-180" />
@@ -191,7 +201,7 @@ export function BookingCard({
             </div>
           </details>
         ) : (
-          <div className="border-t border-sand pt-4">
+          <div className={cn("border-t border-sand pt-4", wholeCardLink && "relative z-10")}>
             <DishList groups={groups} />
           </div>
         ))}

@@ -62,7 +62,7 @@ export const SETUP_COLOR_HEX: Record<(typeof SETUP_COLORS)[number], string> = {
 export const COURSE_ORDER: Course[] = ["antipasto","primo","secondo","contorno","dolce","bevande"];
 export const COURSE_LABELS: Record<Course, string> = { antipasto: "Antipasto", primo: "Primo", secondo: "Secondo", contorno: "Contorno", dolce: "Dolce", bevande: "Bevande" };
 export const ROLE_LABELS: Record<Role, string> = { admin: "Amministratore", sala: "Sala", cucina: "Cucina" };
-export const STATUS_LABELS: Record<BookingStatus, string> = { opzione: "Opzione", confermato: "Confermato", saldato: "Saldato", annullato: "Annullato" };
+export const STATUS_LABELS: Record<BookingStatus, string> = { opzione: "Attesa", confermato: "Confermato", saldato: "Saldato", annullato: "Annullato" };
 export const STATUS_COLORS: Record<BookingStatus, string> = { opzione: "#A9792B", confermato: "#355A63", saldato: "#4F6B45", annullato: "#9B3B32" };
 
 export const PAYMENT_METHODS = ["contanti", "bonifico", "carta", "assegno", "altro"] as const;
