@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Passa il ruolo di amministratore a un altro account (l'app supporta un solo admin).
-// Uso: node scripts/transfer-admin.mjs <nuova-email> "<Nome Cognome>"
+// Uso: node scripts/transfer-admin.mjs <nuova-email> "<Nome Cognome>" [--from-env]
 // La password del nuovo admin viene chiesta a terminale senza mostrarla
 // (non finisce nella cronologia della shell). Se l'account esiste già, la password resta invariata.
 // Il vecchio admin diventa un operatore di sala DISATTIVATO (riattivabile da "Operatori").
@@ -74,14 +74,26 @@ if (readError) {
 }
 const previous = (currentAdmins ?? []).filter((p) => p.email?.toLowerCase() !== email);
 
-const password = await askHidden(`Password per ${email} (min ${MIN_PASSWORD_LENGTH} caratteri): `);
+// Con --from-env la password si legge da ADMIN_PASSWORD in .env.local (solo se ADMIN_EMAIL coincide),
+// utile nei terminali che non supportano l'inserimento nascosto.
+const fromEnv = process.argv.includes("--from-env");
+let password;
+if (fromEnv) {
+  if ((process.env.ADMIN_EMAIL ?? "").trim().toLowerCase() !== email) {
+    console.error(`--from-env: ADMIN_EMAIL in .env.local deve essere ${email}.`);
+    process.exit(1);
+  }
+  password = process.env.ADMIN_PASSWORD ?? "";
+} else {
+  password = await askHidden(`Password per ${email} (min ${MIN_PASSWORD_LENGTH} caratteri): `);
+  const confirm = await askHidden("Ripeti la password: ");
+  if (confirm !== password) {
+    console.error("Le password non coincidono.");
+    process.exit(1);
+  }
+}
 if (password.length < MIN_PASSWORD_LENGTH) {
   console.error(`La password deve avere almeno ${MIN_PASSWORD_LENGTH} caratteri.`);
-  process.exit(1);
-}
-const confirm = await askHidden("Ripeti la password: ");
-if (confirm !== password) {
-  console.error("Le password non coincidono.");
   process.exit(1);
 }
 
