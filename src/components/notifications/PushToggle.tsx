@@ -152,10 +152,30 @@ export function PushToggle() {
         cancelled = true;
       };
     }
+    // "Attive" solo se l'iscrizione del telefono è valida E registrata sul server:
+    // una sottoscrizione rimasta da un tentativo fallito viene risincronizzata o rimossa.
     serviceWorkerReady()
       .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => {
-        if (!cancelled) setState(sub ? "on" : "off");
+      .then(async (sub) => {
+        if (!sub) return "off" as const;
+        const json = sub.toJSON();
+        const keyMatches = sameApplicationServerKey(sub, urlBase64ToApplicationKey(VAPID_PUBLIC_KEY as string));
+        if (!keyMatches || !json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+          await sub.unsubscribe();
+          return "off" as const;
+        }
+        const saved = await savePushSubscription(
+          { endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } },
+          navigator.userAgent,
+        );
+        if (!saved.ok) {
+          console.error("[push] risincronizzazione fallita:", saved.error);
+          return "off" as const;
+        }
+        return "on" as const;
+      })
+      .then((next) => {
+        if (!cancelled) setState(next);
       })
       .catch((err: unknown) => {
         console.error("[push] stato iniziale non leggibile:", errorName(err), err);
