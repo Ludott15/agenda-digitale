@@ -8,7 +8,7 @@ import type {
 import { cn } from "./cn";
 
 const FIELD_BASE =
-  "w-full rounded-btn border bg-paper px-3.5 py-2.5 text-[15px] text-ink placeholder:text-slate transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-petrol/40 disabled:cursor-not-allowed disabled:bg-cream disabled:text-disabled";
+  "w-full rounded-btn border bg-paper px-3.5 py-2.5 text-[16px] lg:text-[15px] text-ink placeholder:text-slate transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-petrol/40 disabled:cursor-not-allowed disabled:bg-cream disabled:text-disabled";
 
 function borderClass(invalid?: boolean): string {
   return invalid ? "border-danger" : "border-slate/70 hover:border-slate";

@@ -37,10 +37,10 @@ export function QuotePreview({ number, issuedAt, validUntil, booking, lines, tot
   return (
     <article
       aria-label="Anteprima preventivo"
-      className="mx-auto flex w-full max-w-[640px] flex-col gap-7 bg-white p-7 text-ink shadow-lg shadow-ink/10 ring-1 ring-sand sm:p-10 print:max-w-none print:shadow-none print:ring-0"
+      className="mx-auto flex w-full min-w-0 max-w-[640px] flex-col gap-7 bg-white p-5 text-ink shadow-lg shadow-ink/10 ring-1 ring-sand sm:p-10 print:max-w-none print:shadow-none print:ring-0"
     >
-      <header className="flex items-start justify-between gap-6 border-b border-sand pb-6">
-        <div className="flex flex-col gap-1 text-[12px] leading-relaxed text-slate-dark">
+      <header className="flex flex-col items-start justify-between gap-6 border-b border-sand pb-6 sm:flex-row">
+        <div className="flex min-w-0 flex-col gap-1 break-words text-[12px] leading-relaxed text-slate-dark">
           <p className="font-serif text-xl text-ink">Il Casale del Notaio</p>
           <p>Via Nicolosi 67 · 95032 Belpasso (CT)</p>
           <p>Sicilia · +39 340 109 0100</p>
@@ -120,8 +120,8 @@ export function QuotePreview({ number, issuedAt, validUntil, booking, lines, tot
         </section>
       ) : null}
 
-      <section aria-label="Righe del preventivo" className="overflow-x-auto">
-        <table className="w-full min-w-[420px] border-collapse text-[13px]">
+      <section aria-label="Righe del preventivo" className="min-w-0 overflow-x-auto">
+        <table className="w-full min-w-0 border-collapse text-[13px] sm:min-w-[420px]">
           <caption className="sr-only">Righe del preventivo</caption>
           <thead>
             <tr className="border-b border-ink text-left text-[11px] font-medium uppercase tracking-[0.12em] text-slate-dark">

@@ -156,7 +156,7 @@ export function PaymentsPanel({ booking, payments, paymentsError }: PaymentsPane
 
       {/* Riepilogo */}
       <div className="flex flex-col gap-4">
-        <dl className="grid grid-cols-3 gap-3">
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <SummaryCell label="Previsto" value={formatEUR(summary.expected_total)} />
           <SummaryCell label="Versato" value={formatEUR(summary.paid_total)} />
           <SummaryCell

@@ -66,7 +66,7 @@ export function SidebarNav({ items }: { items: NavLink[] }) {
 }
 
 const MOBILE_LINK_CLASS =
-  "relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors duration-300";
+  "relative flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors duration-300";
 
 /**
  * Barra di navigazione inferiore mobile (< lg), con safe-area.
@@ -93,10 +93,10 @@ export function BottomNav({ items }: { items: NavLink[] }) {
     <>
       <nav
         aria-label="Navigazione principale"
-        className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-sand/15 bg-ink pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="no-print fixed inset-x-0 bottom-0 left-0 right-0 z-30 w-full max-w-full border-t border-sand/15 bg-ink pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden"
       >
         <ul
-          className="grid"
+          className="grid w-full"
           style={{ gridTemplateColumns: `repeat(${direct.length + 1}, minmax(0, 1fr))` }}
         >
           {direct.map((item) => {
@@ -115,8 +115,8 @@ export function BottomNav({ items }: { items: NavLink[] }) {
                   {active && (
                     <span aria-hidden="true" className="absolute inset-x-6 top-0 h-[2px] bg-sand" />
                   )}
-                  <Icon aria-hidden="true" className="size-5" />
-                  {item.label}
+                  <Icon aria-hidden="true" className="size-5 shrink-0" />
+                  <span className="block max-w-full truncate">{item.label}</span>
                 </Link>
               </li>
             );
@@ -136,8 +136,8 @@ export function BottomNav({ items }: { items: NavLink[] }) {
               {overflowActive && (
                 <span aria-hidden="true" className="absolute inset-x-6 top-0 h-[2px] bg-sand" />
               )}
-              <Ellipsis aria-hidden="true" className="size-5" />
-              Altro
+              <Ellipsis aria-hidden="true" className="size-5 shrink-0" />
+              <span className="block max-w-full truncate">Altro</span>
             </button>
           </li>
         </ul>

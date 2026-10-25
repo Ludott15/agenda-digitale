@@ -40,7 +40,7 @@ function StatTile({ label, value, hint, highlight = false }: StatTileProps) {
         {label}
       </p>
       <p className="font-serif text-3xl tabular-nums text-ink sm:text-4xl lg:text-5xl">{value}</p>
-      <p className="text-[12px] leading-snug text-slate-dark sm:text-[13px]">{hint}</p>
+      <p className="break-words text-[12px] leading-snug text-slate-dark sm:text-[13px]">{hint}</p>
     </Card>
   );
 }
@@ -107,7 +107,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         title="Dashboard"
         description={`Panoramica di ${capitalize(formatIt(todayDate, "EEEE d MMMM yyyy"))}.`}
         actions={
-          <ButtonLink href={`/agenda?date=${today}&view=month`} variant="outline" size="md">
+          <ButtonLink href={`/agenda?date=${today}&view=month`} variant="outline" size="md" className="w-full sm:w-auto">
             Vai all&rsquo;agenda
           </ButtonLink>
         }
