@@ -3,6 +3,7 @@ import { signOut } from "@/app/actions/auth";
 import { Badge, SubmitButton } from "@/components/ui";
 import { ROLE_LABELS, type Profile } from "@/lib/types";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import { SidebarNav } from "./NavLinks";
 import type { NavLink } from "./nav";
 
@@ -29,6 +30,9 @@ export function Sidebar({ profile, links }: { profile: Profile; links: NavLink[]
       </div>
 
       <div className="border-t border-sand/15 px-7 py-6">
+        <div className="mb-5">
+          <InstallAppButton variant="sidebar" />
+        </div>
         <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate font-serif text-lg text-logo-cream">{profile.full_name}</p>
           <NotificationBell variant="sidebar" />

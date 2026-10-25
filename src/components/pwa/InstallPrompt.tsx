@@ -4,22 +4,18 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { cn } from "@/components/ui/cn";
+import {
+  isIosSafari,
+  isStandaloneNow,
+  promptInstall,
+  useInstallState,
+} from "./install-store";
 
-const DISMISS_KEY = "agenda-install-dismissed-until";
-const DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+const DISMISS_KEY = "agenda-install-dismissed-until-v2";
+const DISMISS_MS = 3 * 24 * 60 * 60 * 1000;
 const SHOW_DELAY_IOS_MS = 1500;
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-}
-
 type Mode = "android" | "ios";
-
-function isStandalone(): boolean {
-  if (window.matchMedia("(display-mode: standalone)").matches) return true;
-  return (navigator as Navigator & { standalone?: boolean }).standalone === true;
-}
 
 function isMobileViewport(): boolean {
   return window.matchMedia("(max-width: 1023px)").matches;
@@ -42,53 +38,39 @@ function rememberDismiss(): void {
   }
 }
 
-/** iPhone/iPad con Safari (non Chrome/Firefox iOS, che non hanno "Aggiungi alla Home" nello stesso menù). */
-function isIosSafari(): boolean {
-  const ua = navigator.userAgent;
-  const isIos = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
-  return isIos && isSafari;
-}
-
 /**
  * Invito a installare l'app sul telefono. Solo mobile (< lg), mai in modalità standalone.
- * Android/Chrome: usa beforeinstallprompt. iOS Safari: mostra le istruzioni manuali.
+ * Usa lo stesso store della voce di menu (install-store.ts): "Non ora" lo nasconde per 3 giorni,
+ * la voce "Installa l'app" nel menu resta sempre disponibile.
  */
 export function InstallPrompt() {
-  const [mode, setMode] = useState<Mode | null>(null);
+  const { deferred, installed } = useInstallState();
+  const [eligible, setEligible] = useState(false);
+  const [iosSafari, setIosSafari] = useState(false);
+  const [iosReady, setIosReady] = useState(false);
+  const [hiddenNow, setHiddenNow] = useState(false);
   const [shown, setShown] = useState(false);
-  const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descId = useId();
 
   useEffect(() => {
-    if (!isMobileViewport() || isStandalone() || isDismissed()) return;
-
-    const onBeforeInstall = (event: Event) => {
-      event.preventDefault();
-      deferredPrompt.current = event as BeforeInstallPromptEvent;
-      setMode("android");
-    };
-    const onInstalled = () => {
-      deferredPrompt.current = null;
-      setMode(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    window.addEventListener("appinstalled", onInstalled);
-
-    let timer: number | undefined;
-    if (isIosSafari()) {
-      timer = window.setTimeout(() => setMode("ios"), SHOW_DELAY_IOS_MS);
-    }
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-      window.removeEventListener("appinstalled", onInstalled);
-      if (timer !== undefined) window.clearTimeout(timer);
-    };
+    if (!isMobileViewport() || isStandaloneNow() || isDismissed()) return;
+    setEligible(true);
+    if (!isIosSafari()) return;
+    setIosSafari(true);
+    const timer = window.setTimeout(() => setIosReady(true), SHOW_DELAY_IOS_MS);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  const mode: Mode | null =
+    !eligible || hiddenNow || installed
+      ? null
+      : deferred
+        ? "android"
+        : iosSafari && iosReady
+          ? "ios"
+          : null;
 
   // Animazione d'ingresso: monta con opacità 0, poi rende visibile al frame successivo.
   useEffect(() => {
@@ -107,21 +89,13 @@ export function InstallPrompt() {
 
   const dismiss = () => {
     rememberDismiss();
-    setMode(null);
+    setHiddenNow(true);
   };
 
   const install = async () => {
-    const event = deferredPrompt.current;
-    if (!event) return dismiss();
-    deferredPrompt.current = null;
-    setMode(null);
-    try {
-      await event.prompt();
-      const choice = await event.userChoice;
-      if (choice.outcome === "dismissed") rememberDismiss();
-    } catch {
-      // Il prompt nativo non è disponibile: nessuna azione aggiuntiva.
-    }
+    setHiddenNow(true);
+    const outcome = await promptInstall();
+    if (outcome === "dismissed") rememberDismiss();
   };
 
   return (

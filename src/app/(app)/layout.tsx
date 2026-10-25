@@ -30,7 +30,7 @@ export default async function AppLayout({
         <Sidebar profile={profile} links={links} />
         <MobileHeader />
 
-        <main id="contenuto" className="min-w-0 overflow-x-clip px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
+        <main id="contenuto" className="min-w-0 clip-x px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
           {children}
         </main>
 

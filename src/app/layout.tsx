@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { InstallCapture } from "@/components/pwa/InstallCapture";
+import { INSTALL_CAPTURE_SCRIPT } from "@/components/pwa/install-capture-script";
+import { IosGestureGuard } from "@/components/pwa/IosGestureGuard";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { StaleDeployGuard } from "@/components/StaleDeployGuard";
 import "./globals.css";
@@ -44,7 +47,11 @@ export default function RootLayout({
   return (
     <html lang="it" className={`${geist.variable} h-full`}>
       <body className="min-h-dvh bg-paper font-sans text-ink antialiased">
+        {/* Eseguito durante il parsing, prima dell'idratazione: non perde beforeinstallprompt. */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_CAPTURE_SCRIPT }} />
         {children}
+        <InstallCapture />
+        <IosGestureGuard />
         <ServiceWorkerRegister />
         <StaleDeployGuard />
       </body>

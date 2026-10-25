@@ -4,7 +4,7 @@ import { BookingCard } from "@/components/bookings/BookingCard";
 import { formatChangeTimestamp } from "@/components/bookings/change-labels";
 import { WeekOccupancy } from "@/components/dashboard/WeekOccupancy";
 import { resolveWeekStart, weekRange } from "@/components/dashboard/week";
-import { ButtonLink, Card, EmptyState, PageHeader } from "@/components/ui";
+import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import {
   getBookingsInRange,
@@ -32,7 +32,7 @@ function StatTile({ label, value, hint, highlight = false }: StatTileProps) {
     <Card
       className={`flex min-w-0 flex-col gap-2 p-4 sm:gap-3 sm:p-5 ${highlight ? "border-warning/60 bg-warning/10" : ""}`}
     >
-      <p className="text-[10px] font-medium uppercase leading-snug tracking-[0.12em] text-bronze sm:text-[11px] sm:tracking-[0.14em]">
+      <p className="break-words text-[10px] font-medium uppercase leading-snug tracking-[0.12em] text-bronze sm:text-[11px] sm:tracking-[0.14em]">
         {label}
       </p>
       <p className="font-serif text-3xl tabular-nums text-ink sm:text-4xl lg:text-5xl">{value}</p>
@@ -93,16 +93,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const activeRooms = rooms.filter((room) => room.active);
 
   return (
-    <div className="flex min-w-0 flex-col gap-8 lg:gap-10">
+    <div className="-mt-2 flex min-w-0 flex-col gap-6 lg:-mt-4 lg:gap-8">
       <PageHeader
+        compact
         eyebrow="Direzione"
         title="Dashboard"
         description={`Panoramica di ${capitalize(formatIt(todayDate, "EEEE d MMMM yyyy"))}.`}
-        actions={
-          <ButtonLink href={`/agenda?date=${today}&view=month`} variant="outline" size="md" className="w-full sm:w-auto">
-            Vai all&rsquo;agenda
-          </ButtonLink>
-        }
       />
 
       <section aria-label="Indicatori principali" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">

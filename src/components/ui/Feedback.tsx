@@ -30,12 +30,20 @@ export interface PageHeaderProps {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** Senza margine inferiore fisso: lo spazio verticale lo gestisce il contenitore. */
+  compact?: boolean;
 }
 
-export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, actions, compact = false }: PageHeaderProps) {
   return (
-    <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div className="flex flex-col gap-2">
+    <header
+      className={
+        compact
+          ? "flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+          : "mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+      }
+    >
+      <div className="flex min-w-0 flex-col gap-2">
         {eyebrow && (
           <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-bronze">
             {eyebrow}

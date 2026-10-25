@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { Montserrat } from "next/font/google";
 import { LoginForm } from "@/components/auth/LoginForm";
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Accesso · Agenda",
@@ -40,6 +47,19 @@ export default function LoginPage() {
       <p className="mt-10 text-center text-[12px] text-sand/80">
         Il Casale del Notaio · Via Nicolosi 67, Belpasso (CT)
       </p>
+
+      <a
+        href="https://cpinsai.it/"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Powered by C.PINSAI"
+        className="group mt-4 inline-flex items-baseline gap-2 rounded-[2px] px-2 py-1 transition-colors duration-300 hover:bg-white/5 focus-visible:outline-sand"
+      >
+        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-sand/70">Powered by</span>
+        <span className={`${montserrat.className} text-[15px] tracking-[0.04em] text-logo-cream`}>
+          C<span className="text-[#E5488A]">.</span>PINSAI
+        </span>
+      </a>
     </main>
   );
 }

@@ -150,7 +150,7 @@ export function BookingCard({
             {time && <span>ore {time}</span>}
             {b.room && <span>{b.room.name}</span>}
           </p>
-          <h3 className="font-serif text-xl leading-tight wrap-anywhere">
+          <h3 className="break-words font-serif text-xl leading-tight wrap-anywhere">
             <Link
               href={href}
               className={cn(
@@ -164,7 +164,7 @@ export function BookingCard({
             </Link>
           </h3>
           {b.event_name && (
-            <p className="wrap-anywhere text-[14px] text-slate-dark">
+            <p className="break-words wrap-anywhere text-[14px] text-slate-dark">
               {clientFullName(b)} · {b.client.phone}
             </p>
           )}

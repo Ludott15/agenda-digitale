@@ -26,10 +26,35 @@
   --radius-btn: 2px;
 }
 
-html,
+/*
+ * Overflow orizzontale (iOS/Safari).
+ * Safari < 16 ignora `overflow-x: clip`: il valore `hidden` scritto prima resta il fallback.
+ * Su body NON usiamo `hidden`: renderebbe body un scroll container e romperebbe gli elementi `sticky`
+ * (sidebar desktop, header mobile). `html` con `hidden` viene propagato al viewport, quindi basta lì.
+ */
+html {
+  min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
 body {
   min-height: 100%;
   max-width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+/*
+ * Sostituisce `overflow-x-clip` di Tailwind, usato sul <main> dell'app.
+ * Su Safari < 16 il fallback `hidden` rende il contenitore scroll container sull'asse x:
+ * un elemento `sticky` dentro (es. anteprima preventivo lg:sticky su iPad) può smettere di bloccarsi.
+ */
+.clip-x {
+  overflow-x: hidden;
   overflow-x: clip;
 }
 

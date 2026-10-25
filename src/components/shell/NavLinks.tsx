@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { signOut } from "@/app/actions/auth";
+import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { cn } from "@/components/ui/cn";
 import type { NavIcon, NavLink } from "./nav";
@@ -161,6 +162,10 @@ export function BottomNav({ items }: { items: NavLink[] }) {
           >
             <X aria-hidden="true" className="size-5" />
           </button>
+        </div>
+
+        <div className="px-3 pt-3">
+          <InstallAppButton variant="menu" onBeforeAction={() => setMoreOpen(false)} />
         </div>
 
         {overflow.length > 0 && (
