@@ -120,7 +120,8 @@ export function QuotePreview({ number, issuedAt, validUntil, booking, lines, tot
         </section>
       ) : null}
 
-      <section aria-label="Righe del preventivo" className="min-w-0 overflow-x-auto">
+      {/* Niente scroll orizzontale su telefono: in iOS Safari farebbe scorrere tutta la pagina. */}
+      <section aria-label="Righe del preventivo" className="min-w-0 lg:overflow-x-auto">
         <table className="w-full min-w-0 border-collapse text-[13px] sm:min-w-[420px]">
           <caption className="sr-only">Righe del preventivo</caption>
           <thead>
@@ -139,7 +140,7 @@ export function QuotePreview({ number, issuedAt, validUntil, booking, lines, tot
             )}
             {lines.map((line, index) => (
               <tr key={index} className="border-b border-sand align-top">
-                <td className="py-2 pr-3">{line.description || "—"}</td>
+                <td className="break-words py-2 pr-3 [overflow-wrap:anywhere]">{line.description || "—"}</td>
                 <td className="py-2 px-3 text-right tabular-nums">{line.quantity}</td>
                 <td className="py-2 px-3 text-right tabular-nums">{formatEUR(line.unit_price)}</td>
                 <td className="py-2 pl-3 text-right tabular-nums">{formatEUR(round2(line.quantity * line.unit_price))}</td>

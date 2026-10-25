@@ -2,7 +2,7 @@
  * Scopo: rendere l'app installabile e mostrare una pagina offline semplice.
  * Non mette mai in cache HTML dinamico, risposte autenticate o /api. */
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const STATIC_CACHE = `agenda-static-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [OFFLINE_URL];
@@ -83,7 +83,7 @@ self.addEventListener("fetch", (event) => {
 // Notifiche push: mostrate anche ad app chiusa (PWA installata).
 // Il payload è JSON { title, body, url, tag } inviato dal server.
 // ---------------------------------------------------------------------
-const NOTIFICATION_ICON = "/icons/icon-192.png";
+const NOTIFICATION_ICON = "/icons/icon-192.png?v=2";
 
 // Accetta solo percorsi che, una volta risolti, restano sull'origine dell'app (niente redirect esterni).
 function sameOriginPath(value) {

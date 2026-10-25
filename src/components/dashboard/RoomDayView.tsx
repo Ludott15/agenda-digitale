@@ -39,24 +39,25 @@ export function RoomDayView({ rooms, days, selectedDay, todayIso, bookings, onSe
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <div className="-mx-4 min-w-0 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <ul className="flex w-max gap-2" aria-label="Giorni della settimana">
+      {/* Griglia a 7 colonne che sta sempre nello schermo: su iOS Safari una striscia scorrevole fa scorrere tutta la pagina. */}
+      <div className="min-w-0">
+        <ul className="grid grid-cols-7 gap-1 sm:gap-2" aria-label="Giorni della settimana">
           {days.map((iso) => {
             const date = toDate(iso);
             const active = iso === selectedDay;
             const count = bookings.filter((b) => b.event_date === iso).length;
             return (
-              <li key={iso}>
+              <li key={iso} className="min-w-0">
                 <button
                   type="button"
                   aria-pressed={active}
                   onClick={() => onSelectDay(iso)}
                   className={cn(
-                    "flex min-w-[4.25rem] flex-col items-center gap-0.5 rounded-btn border px-3 py-2.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petrol focus-visible:ring-offset-2 focus-visible:ring-offset-paper",
+                    "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-btn border px-0.5 py-2.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petrol focus-visible:ring-offset-2 focus-visible:ring-offset-paper",
                     active ? "border-petrol bg-petrol text-paper" : "border-sand bg-paper text-ink hover:bg-cream",
                   )}
                 >
-                  <span className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80">
+                  <span className="max-w-full truncate text-[10px] font-medium uppercase tracking-[0.06em] opacity-80 sm:text-[11px] sm:tracking-[0.12em]">
                     {formatIt(date, "EEE")}
                   </span>
                   <span className="font-serif text-xl leading-none tabular-nums">{formatIt(date, "d")}</span>

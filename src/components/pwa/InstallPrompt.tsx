@@ -119,7 +119,7 @@ export function InstallPrompt() {
       <div className="flex items-start gap-4">
         <div className="shrink-0 overflow-hidden rounded-[2px] bg-ink">
           <Image
-            src="/icons/icon-192.png"
+            src="/icons/icon-192.png?v=2"
             alt=""
             width={48}
             height={48}
