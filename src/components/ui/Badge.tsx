@@ -32,7 +32,8 @@ export function Badge({ tone = "neutral", className, ...props }: BadgeProps) {
 
 const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
   opzione: "warning",
-  confermato: "success",
+  confermato: "petrol",
+  saldato: "success",
   annullato: "neutral",
 };
 

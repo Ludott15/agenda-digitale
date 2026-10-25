@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { BookingInput, CoversInput, DishesInput } from "@/lib/validation";
 import { authorize, dbFail, fail, invalidInput, isUuid } from "@/lib/action-utils";
 import { canEditCovers, canEditDishes, isAdmin } from "@/lib/permissions";
+import { loadBookingBrief, notifyBookingDeleted, notifyBookingEvent } from "@/lib/notify";
 import type { ActionResult } from "@/lib/types";
 
 function revalidateBooking(id?: string, clientId?: string): void {
@@ -29,6 +31,8 @@ export async function createBooking(input: unknown): Promise<ActionResult<{ id: 
   if (error || typeof data !== "string") return dbFail(error);
 
   revalidateBooking(data, parsed.data.client_id);
+  const actor = auth.profile;
+  after(() => notifyBookingEvent({ type: "booking_created", bookingId: data, actor }));
   return { ok: true, data: { id: data } };
 }
 
@@ -41,6 +45,13 @@ export async function updateBooking(id: string, input: unknown): Promise<ActionR
   const parsed = BookingInput.safeParse(input);
   if (!parsed.success) return invalidInput(parsed.error);
 
+  // Stato precedente, per scegliere il tipo di notifica (cambio stato / annullamento / modifica generica).
+  const { data: previous } = await auth.supabase
+    .from("bookings")
+    .select("status")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await auth.supabase.rpc("upsert_booking", {
     p_id: id,
     p_data: parsed.data,
@@ -48,6 +59,15 @@ export async function updateBooking(id: string, input: unknown): Promise<ActionR
   if (error) return dbFail(error);
 
   revalidateBooking(id, parsed.data.client_id);
+  const newStatus = parsed.data.status;
+  const type =
+    newStatus === "annullato" && previous?.status !== "annullato"
+      ? "booking_cancelled"
+      : previous?.status && previous.status !== newStatus
+        ? "booking_status"
+        : "booking_updated";
+  const actor = auth.profile;
+  after(() => notifyBookingEvent({ type, bookingId: id, actor }));
   return { ok: true, data: undefined };
 }
 
@@ -56,14 +76,19 @@ export async function deleteBooking(id: string): Promise<ActionResult> {
   const auth = await authorize(isAdmin);
   if (!auth.ok) return auth;
 
+  // Dati per la notifica: vanno letti prima della cancellazione.
+  const brief = await loadBookingBrief(id);
+
   const { error } = await auth.supabase.from("bookings").delete().eq("id", id);
-  // 23503: esistono preventivi collegati (FK restrict).
+  // 23503: esistono preventivi o acconti collegati (FK restrict).
   if (error?.code === "23503") {
-    return fail("Impossibile eliminare la prenotazione: esistono preventivi collegati. Elimina prima i preventivi collegati o imposta lo stato Annullato.");
+    return fail("Impossibile eliminare la prenotazione: esistono preventivi o acconti collegati. Elimina prima quelli collegati o imposta lo stato Annullato.");
   }
   if (error) return dbFail(error);
 
   revalidateBooking();
+  const actor = auth.profile;
+  if (brief) after(() => notifyBookingDeleted(brief, actor));
   return { ok: true, data: undefined };
 }
 
@@ -85,6 +110,8 @@ export async function updateBookingCovers(id: string, input: unknown): Promise<A
   if (error) return dbFail(error);
 
   revalidateBooking(id);
+  const actor = auth.profile;
+  after(() => notifyBookingEvent({ type: "covers_updated", bookingId: id, actor }));
   return { ok: true, data: undefined };
 }
 
@@ -104,6 +131,8 @@ export async function updateBookingDishes(id: string, dishes: unknown): Promise<
   if (error) return dbFail(error);
 
   revalidateBooking(id);
+  const actor = auth.profile;
+  after(() => notifyBookingEvent({ type: "dishes_updated", bookingId: id, actor }));
   return { ok: true, data: undefined };
 }
 
@@ -117,5 +146,7 @@ export async function resetDishesFromMenu(id: string): Promise<ActionResult> {
   if (error) return dbFail(error);
 
   revalidateBooking(id);
+  const actor = auth.profile;
+  after(() => notifyBookingEvent({ type: "dishes_updated", bookingId: id, actor }));
   return { ok: true, data: undefined };
 }

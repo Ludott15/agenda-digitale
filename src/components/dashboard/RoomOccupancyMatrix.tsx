@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { formatIt, toDate } from "@/components/agenda/agenda-utils";
 import { bookingTitle, totalCovers } from "@/components/bookings/format";
-import { EmptyState } from "@/components/ui";
-import type { BookingListItem, Room } from "@/lib/types";
+import { EmptyState, StatusDot } from "@/components/ui";
+import { STATUS_LABELS, type BookingListItem, type Room } from "@/lib/types";
 
 export interface RoomOccupancyMatrixProps {
   rooms: Room[];
@@ -67,11 +67,14 @@ export function RoomOccupancyMatrix({ rooms, days, bookings }: RoomOccupancyMatr
                   <td key={iso} className="p-1.5 align-middle">
                     <Link
                       href={`/prenotazioni/${booking.id}`}
-                      title={`${menuName} · ${bookingTitle(booking)}: ${covers} coperti su capienza ${room.capacity}`}
+                      title={`${menuName} · ${bookingTitle(booking)}: ${covers} coperti su capienza ${room.capacity} · ${STATUS_LABELS[booking.status]}`}
                       className="flex min-h-20 flex-col justify-center gap-1.5 rounded-[2px] bg-petrol px-3 py-2.5 text-paper transition-colors duration-200 hover:bg-petrol-hover"
                     >
-                      <span className="line-clamp-2 font-serif text-[15px] font-semibold leading-snug break-words">
-                        {menuName}
+                      <span className="flex min-w-0 items-start gap-2">
+                        <StatusDot status={booking.status} size="sm" onDark className="mt-1.5" />
+                        <span className="line-clamp-2 min-w-0 font-serif text-[15px] font-semibold leading-snug break-words">
+                          {menuName}
+                        </span>
                       </span>
                       <span className="text-[12px] tabular-nums text-paper/90">
                         {covers}/{room.capacity} coperti

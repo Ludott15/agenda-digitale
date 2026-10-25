@@ -1,24 +1,22 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useRef, type ReactNode, type TouchEvent } from "react";
 
 const SWIPE_THRESHOLD_PX = 50;
 
 export interface SwipeDayProps {
-  /** Giorno precedente (swipe verso destra). */
-  prevHref: string;
-  /** Giorno successivo (swipe verso sinistra). */
-  nextHref: string;
+  /** Swipe verso destra: precedente (giorno o mese, a seconda del contenuto). */
+  onPrev: () => void;
+  /** Swipe verso sinistra: successivo. */
+  onNext: () => void;
   children: ReactNode;
 }
 
 /**
- * Wrapper della lista del giorno (mobile): uno swipe orizzontale naviga al giorno
- * precedente/successivo. Gli swipe prevalentemente verticali (scroll) vengono ignorati.
+ * Wrapper a swipe orizzontale (mobile). Il gesto è gestito in locale: nessuna navigazione
+ * di pagina. Gli swipe prevalentemente verticali (scroll) vengono ignorati.
  */
-export function SwipeDay({ prevHref, nextHref, children }: SwipeDayProps) {
-  const router = useRouter();
+export function SwipeDay({ onPrev, onNext, children }: SwipeDayProps) {
   const start = useRef<{ x: number; y: number } | null>(null);
 
   const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
@@ -36,7 +34,8 @@ export function SwipeDay({ prevHref, nextHref, children }: SwipeDayProps) {
     const dy = touch.clientY - origin.y;
     if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
 
-    router.push(dx < 0 ? nextHref : prevHref);
+    if (dx < 0) onNext();
+    else onPrev();
   };
 
   return (

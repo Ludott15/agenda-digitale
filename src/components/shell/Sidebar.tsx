@@ -2,6 +2,7 @@ import Image from "next/image";
 import { signOut } from "@/app/actions/auth";
 import { Badge, SubmitButton } from "@/components/ui";
 import { ROLE_LABELS, type Profile } from "@/lib/types";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { SidebarNav } from "./NavLinks";
 import type { NavLink } from "./nav";
 
@@ -28,7 +29,10 @@ export function Sidebar({ profile, links }: { profile: Profile; links: NavLink[]
       </div>
 
       <div className="border-t border-sand/15 px-7 py-6">
-        <p className="truncate font-serif text-lg text-logo-cream">{profile.full_name}</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate font-serif text-lg text-logo-cream">{profile.full_name}</p>
+          <NotificationBell variant="sidebar" />
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Badge tone="bronze" className="border-sand/40 bg-transparent text-sand">
             {ROLE_LABELS[profile.role]}
@@ -61,11 +65,14 @@ export function MobileHeader() {
         unoptimized
         className="h-8 w-auto"
       />
-      <form action={signOut}>
-        <SubmitButton variant="light" size="sm" pendingLabel="Uscita…">
-          Esci
-        </SubmitButton>
-      </form>
+      <div className="flex items-center gap-1">
+        <NotificationBell variant="header" />
+        <form action={signOut}>
+          <SubmitButton variant="light" size="sm" pendingLabel="Uscita…">
+            Esci
+          </SubmitButton>
+        </form>
+      </div>
     </header>
   );
 }

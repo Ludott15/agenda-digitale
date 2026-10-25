@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SETUP_COLORS } from "./types";
+import { PAYMENT_METHODS, SETUP_COLORS } from "./types";
 
 // ---------------------------------------------------------------------
 // Limiti
@@ -175,7 +175,7 @@ export const BookingInput = z
     kids_menu_id: optUuid,
     setup_colors: z.array(z.enum(SETUP_COLORS, { message: "Colore non valido" })).max(MAX_ITEMS).default([]),
     setup_notes: optLongText,
-    status: z.enum(["opzione", "confermato", "annullato"]).default("opzione"),
+    status: z.enum(["opzione", "confermato", "saldato", "annullato"]).default("opzione"),
     notes: optLongText,
     allergies: z.array(AllergyInput).max(MAX_ITEMS, "Troppe allergie (massimo 60)").default([]),
     /** Se assente e menu_id presente, il backend copia i piatti dal menù. */
@@ -291,3 +291,74 @@ export const QuoteInput = z.object({
   notes: optLongText,
 });
 export type QuoteInputType = z.infer<typeof QuoteInput>;
+
+// ---------------------------------------------------------------------
+// Acconti (pagamenti) e ricevute: solo admin
+// ---------------------------------------------------------------------
+export const RECEIPT_MAX_BYTES = 10 * 1024 * 1024;
+/** MIME ammessi per le ricevute (bucket "receipts"). */
+export const RECEIPT_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+] as const;
+export type ReceiptMimeType = (typeof RECEIPT_MIME_TYPES)[number];
+
+const EXTENSION_TO_MIME: Record<string, ReceiptMimeType> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif",
+  pdf: "application/pdf",
+};
+
+/**
+ * Tipo MIME di una ricevuta: quello dichiarato se ammesso; se assente o generico
+ * (es. HEIC spesso arriva come application/octet-stream) si usa l'estensione. Altrimenti null.
+ */
+export function resolveReceiptType(file: { name: string; type: string }): ReceiptMimeType | null {
+  const declared = file.type.toLowerCase();
+  if (declared && declared !== "application/octet-stream") {
+    return (RECEIPT_MIME_TYPES as readonly string[]).includes(declared)
+      ? (declared as ReceiptMimeType)
+      : null;
+  }
+  const ext = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+  return EXTENSION_TO_MIME[ext] ?? null;
+}
+
+/** File ricevuta: non vuoto, max 10 MB, formato ammesso. */
+export const ReceiptFile = z
+  .instanceof(File, { message: "Ricevuta non valida" })
+  .refine((f) => f.size > 0, "Il file della ricevuta è vuoto")
+  .refine((f) => f.size <= RECEIPT_MAX_BYTES, "La ricevuta supera 10 MB")
+  .refine(
+    (f) => resolveReceiptType(f) !== null,
+    "Formato non ammesso (usa una foto JPG, PNG, WebP, HEIC o un PDF)",
+  );
+
+/** Importo: accetta anche la virgola decimale ("12,50"). */
+const amountNumber = z.preprocess(
+  (v) => (typeof v === "string" ? toNumber(v.trim().replace(",", ".")) : toNumber(v)),
+  z
+    .number(numberError("Importo non valido"))
+    .gt(0, "L'importo deve essere maggiore di zero")
+    .max(1000000, "Importo troppo alto")
+    .transform(round2),
+);
+
+export const PaymentInput = z.object({
+  amount: amountNumber,
+  paid_at: z.preprocess(
+    emptyToNull,
+    z.string({ error: "Data obbligatoria" }).pipe(dateSchema),
+  ),
+  method: z.preprocess(emptyToNull, z.enum(PAYMENT_METHODS, { message: "Metodo non valido" }).nullable()),
+  notes: optLongText,
+});
+export type PaymentInputType = z.infer<typeof PaymentInput>;

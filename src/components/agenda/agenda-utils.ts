@@ -2,9 +2,13 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
   format,
   isValid,
   parseISO,
+  startOfMonth,
   startOfWeek,
   subDays,
   subMonths,
@@ -14,6 +18,12 @@ import { it } from "date-fns/locale";
 import type { BookingListItem } from "@/lib/types";
 
 export type AgendaView = "month" | "week" | "day";
+
+/** Intervallo di date in formato ISO (YYYY-MM-DD), estremi inclusi. */
+export interface IsoRange {
+  from: string;
+  to: string;
+}
 
 export const AGENDA_TZ = "Europe/Rome";
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -72,6 +82,38 @@ export function shiftPeriod(iso: string, view: AgendaView, direction: 1 | -1): s
 export function weekDates(iso: string): Date[] {
   const start = startOfWeek(toDate(iso), { weekStartsOn: 1 });
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+/** Griglia mensile lun-dom (5 o 6 settimane) che contiene il mese di `iso`. */
+export function monthGridRange(iso: string): IsoRange {
+  const date = toDate(iso);
+  return {
+    from: toISO(startOfWeek(startOfMonth(date), { weekStartsOn: 1 })),
+    to: toISO(endOfWeek(endOfMonth(date), { weekStartsOn: 1 })),
+  };
+}
+
+/** Tutti i giorni della griglia mensile di `iso` (multiplo di 7). */
+export function monthGridDates(iso: string): Date[] {
+  const { from, to } = monthGridRange(iso);
+  return eachDayOfInterval({ start: toDate(from), end: toDate(to) });
+}
+
+/** true se `inner` è interamente contenuto in `outer` (ISO a confronto lessicografico). */
+export function isRangeInside(inner: IsoRange, outer: IsoRange): boolean {
+  return inner.from >= outer.from && inner.to <= outer.to;
+}
+
+/** Titolo del periodo per la toolbar desktop. */
+export function periodTitle(view: AgendaView, iso: string): string {
+  const date = toDate(iso);
+  if (view === "week") {
+    const from = startOfWeek(date, { weekStartsOn: 1 });
+    const to = endOfWeek(date, { weekStartsOn: 1 });
+    return `${formatIt(from, "d MMM")} – ${formatIt(to, "d MMM yyyy")}`;
+  }
+  if (view === "day") return capitalize(formatIt(date, "EEEE d MMMM yyyy"));
+  return capitalize(formatIt(date, "LLLL yyyy"));
 }
 
 export function groupByDate(bookings: BookingListItem[]): Map<string, BookingListItem[]> {

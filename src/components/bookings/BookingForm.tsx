@@ -5,8 +5,18 @@ import { useState, useTransition, type ChangeEvent, type FormEvent, type ReactNo
 import { Check, Plus, Search, Trash2, X } from "lucide-react";
 import { createBooking, updateBooking } from "@/app/actions/bookings";
 import { createClient as createClientAction } from "@/app/actions/clients";
+import { addPayment } from "@/app/actions/payments";
 import Link from "next/link";
 import { Alert, Button, ButtonLink, Field, Input, Select, Textarea, cn, fieldIds } from "@/components/ui";
+import { PaymentDraftFields } from "@/components/payments/PaymentDraftFields";
+import {
+  buildPaymentFormData,
+  emptyPaymentDraft,
+  parseAmountInput,
+  validateDraft,
+  type DraftErrors,
+  type PaymentDraft,
+} from "@/components/payments/draft";
 import { formatEUR } from "@/lib/quote-utils";
 import {
   SETUP_COLORS,
@@ -44,6 +54,16 @@ interface AllergyRow {
   condition: string;
   notes: string;
 }
+
+/** Riga di acconto nel form di creazione (chiave stabile per React). */
+interface DepositRow {
+  key: string;
+  draft: PaymentDraft;
+}
+
+/** Riga vuota (nessun dato inserito): viene ignorata in validazione e invio. */
+const isBlankDraft = (d: PaymentDraft): boolean =>
+  !d.amount.trim() && !d.notes.trim() && !d.receipt && d.method === "";
 
 interface NewClient {
   first_name: string;
@@ -202,6 +222,18 @@ function roomWarnings(
     warnings.push(`${covers} coperti superano la capienza di ${room.name} (${room.capacity}).`);
   }
   return warnings;
+}
+
+/** Validazione degli acconti: chiavi `deposits.<indice>.<campo>`, allineate al focus sugli id di PaymentDraftFields. */
+function validateDeposits(rows: DepositRow[]): Errors {
+  const errors: Errors = {};
+  rows.forEach((row, index) => {
+    if (isBlankDraft(row.draft)) return;
+    for (const [field, message] of Object.entries(validateDraft(row.draft))) {
+      errors[`deposits.${index}.${field}`] = [message];
+    }
+  });
+  return errors;
 }
 
 function buildPayload(v: FormValues, clientId: string) {
@@ -378,8 +410,24 @@ export function BookingForm({
   const [query, setQuery] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [deposits, setDeposits] = useState<DepositRow[]>([]);
 
   const patch = (changes: Partial<FormValues>) => setValues((v) => ({ ...v, ...changes }));
+
+  const addDeposit = () =>
+    setDeposits((rows) => [...rows, { key: nextKey(), draft: emptyPaymentDraft() }]);
+  const updateDeposit = (key: string, changes: Partial<PaymentDraft>) =>
+    setDeposits((rows) => rows.map((r) => (r.key === key ? { ...r, draft: { ...r.draft, ...changes } } : r)));
+  const removeDeposit = (key: string) => setDeposits((rows) => rows.filter((r) => r.key !== key));
+  const depositErrors = (index: number): DraftErrors => {
+    const prefix = `deposits.${index}.`;
+    const out: DraftErrors = {};
+    for (const [key, messages] of Object.entries(errors)) {
+      if (key.startsWith(prefix)) out[key.slice(prefix.length) as keyof PaymentDraft] = first(messages);
+    }
+    return out;
+  };
+  const depositsTotal = deposits.reduce((sum, r) => sum + (parseAmountInput(r.draft.amount) ?? 0), 0);
 
   // Clienti: quelli appena creati in questa sessione + la lista dal server.
   const allClients: ClientOption[] = [
@@ -443,7 +491,10 @@ export function BookingForm({
     event.preventDefault();
     setFormError(null);
 
-    const localErrors = validate(values, clientMode, newClient);
+    const localErrors = {
+      ...validate(values, clientMode, newClient),
+      ...(mode === "create" ? validateDeposits(deposits) : {}),
+    };
     setErrors(localErrors);
     if (Object.keys(localErrors).length > 0) {
       setFormError("Controlla i campi evidenziati.");
@@ -452,6 +503,7 @@ export function BookingForm({
     }
 
     const activeIndexes = values.allergies.flatMap((a, i) => (isBlankAllergy(a) ? [] : [i]));
+    const pendingDeposits = deposits.filter((r) => !isBlankDraft(r.draft));
 
     startTransition(async () => {
       let clientId = values.clientId;
@@ -495,7 +547,18 @@ export function BookingForm({
         setFormError(result.error);
         return;
       }
-      router.push(`/prenotazioni/${result.data.id}`);
+
+      // Acconti: uno alla volta dopo la prenotazione. Un errore non annulla la prenotazione:
+      // il dettaglio segnala quanti acconti mancano e si possono riaggiungere dal pannello Pagamenti.
+      const bookingId = result.data.id;
+      let failed = 0;
+      for (const row of pendingDeposits) {
+        const saved = await addPayment(bookingId, buildPaymentFormData(row.draft));
+        if (!saved.ok) failed += 1;
+      }
+      router.push(
+        failed > 0 ? `/prenotazioni/${bookingId}?payments_error=${failed}` : `/prenotazioni/${bookingId}`,
+      );
     });
   };
 
@@ -626,7 +689,7 @@ export function BookingForm({
           <Field label="Nome evento" htmlFor="event_name" error={first(errors.event_name)}>
             <Input id="event_name" invalid={!!errors.event_name} aria-describedby={describedBy("event_name", first(errors.event_name))} value={values.event_name} onChange={(e) => patch({ event_name: e.target.value })} placeholder="es. Matrimonio Rossi" />
           </Field>
-          <Field label="Stato" htmlFor="status" error={first(errors.status)}>
+          <Field label="Stato" htmlFor="status" error={first(errors.status)} hint="Saldato = pagamento completato">
             <Select id="status" invalid={!!errors.status} aria-describedby={describedBy("status", first(errors.status))} value={values.status} onChange={(e) => patch({ status: e.target.value as BookingStatus })}>
               {(Object.keys(STATUS_LABELS) as BookingStatus[]).map((s) => (
                 <option key={s} value={s}>
@@ -650,6 +713,60 @@ export function BookingForm({
             <Input id="event_time" type="time" invalid={!!errors.event_time} aria-describedby={describedBy("event_time", first(errors.event_time), true)} value={values.event_time} onChange={(e) => patch({ event_time: e.target.value })} />
           </Field>
         </div>
+      </FormSection>
+
+      {/* Acconti: il form è accessibile solo all'admin */}
+      <FormSection id="sec-acconti" eyebrow="Acconti" title="Versamenti ricevuti">
+        {mode === "create" ? (
+          <>
+            <p className="text-[14px] leading-relaxed text-slate-dark">
+              Facoltativi. Ogni acconto viene registrato subito dopo la prenotazione. Le ricevute sono visibili solo all’amministrazione.
+            </p>
+            <div className="flex flex-col gap-4">
+              {deposits.map((row, index) => (
+                <div key={row.key} className="flex flex-col gap-4 rounded-btn border border-sand bg-paper p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-bronze">Acconto {index + 1}</p>
+                    <Button variant="ghost" size="sm" onClick={() => removeDeposit(row.key)} disabled={pending}>
+                      <Trash2 aria-hidden="true" className="size-4" />
+                      Rimuovi
+                    </Button>
+                  </div>
+                  <PaymentDraftFields
+                    idPrefix={idFor(`deposits.${index}`)}
+                    draft={row.draft}
+                    errors={depositErrors(index)}
+                    onChange={(changes) => updateDeposit(row.key, changes)}
+                    disabled={pending}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <Button variant="outline" size="sm" onClick={addDeposit} disabled={pending}>
+                <Plus aria-hidden="true" className="size-4" />
+                Aggiungi acconto
+              </Button>
+              {deposits.length > 0 && (
+                <p className="text-[14px] text-slate-dark">
+                  Totale acconti:{" "}
+                  <span className="font-serif text-2xl tabular-nums text-ink">{formatEUR(depositsTotal)}</span>
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-start gap-4">
+            <p className="text-[14px] leading-relaxed text-slate-dark">
+              Gli acconti e le ricevute si gestiscono dal pannello Pagamenti nella pagina della prenotazione.
+            </p>
+            {booking && (
+              <ButtonLink href={`/prenotazioni/${booking.id}#pagamenti`} variant="outline" size="sm">
+                Vai ai pagamenti
+              </ButtonLink>
+            )}
+          </div>
+        )}
       </FormSection>
 
       {/* 03 · Coperti */}

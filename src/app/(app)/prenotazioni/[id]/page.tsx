@@ -7,6 +7,7 @@ import { BookingChangesTimeline } from "@/components/bookings/BookingChangesTime
 import { CoversEditor } from "@/components/bookings/CoversEditor";
 import { DeleteBookingButton } from "@/components/bookings/DeleteBookingButton";
 import { DishesEditor } from "@/components/bookings/DishesEditor";
+import { PaymentsPanel } from "@/components/payments/PaymentsPanel";
 import { CreateQuoteButton } from "@/components/bookings/QuoteActions";
 import { CourseList } from "@/components/bookings/MenuPreview";
 import { bookingTitle, formatTime } from "@/components/bookings/format";
@@ -16,6 +17,7 @@ import { isUuid } from "@/lib/action-utils";
 import { canEditCovers, canEditDishes, isAdmin } from "@/lib/permissions";
 import { requireProfile } from "@/lib/auth";
 import { getBooking, getBookingChanges } from "@/lib/data/bookings";
+import { getPayments } from "@/lib/data/payments";
 import { getMenus, getRooms } from "@/lib/data/catalog";
 import { getQuotesForBooking } from "@/lib/data/quotes";
 import { computeQuoteTotals, formatEUR } from "@/lib/quote-utils";
@@ -85,8 +87,15 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BookingDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ payments_error?: string }>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
   const profile = await requireProfile();
   if (!isUuid(id)) notFound();
 
@@ -97,12 +106,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const covers = canEditCovers(profile);
   const dishesEditable = canEditDishes(profile);
 
-  const [changes, rooms, menus, quotes] = await Promise.all([
+  const [changes, rooms, menus, quotes, payments] = await Promise.all([
     getBookingChanges(id),
     getRooms({ includeInactive: true }),
     getMenus({ includeInactive: true }),
     admin ? getQuotesForBooking(id) : Promise.resolve([]),
+    admin ? getPayments(id) : Promise.resolve([]),
   ]);
+  const failedDeposits = Number.parseInt(query.payments_error ?? "", 10);
+  const paymentsError = Number.isFinite(failedDeposits) && failedDeposits > 0 ? failedDeposits : undefined;
 
   const client = booking.client;
   const clientName = `${client.first_name} ${client.last_name}`;
@@ -325,6 +337,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               )}
             </div>
           </DetailCard>
+
+          {admin && <PaymentsPanel booking={booking} payments={payments} paymentsError={paymentsError} />}
 
           {booking.notes && (
             <DetailCard eyebrow="Note" title="Note interne">

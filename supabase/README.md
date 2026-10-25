@@ -97,3 +97,15 @@ Gli operatori disattivati (`active = false`) non accedono né via app né via RL
 - Le sale con prenotazioni non possono essere eliminate: usa il flag `active` per disattivarle.
 - Il menù Bambini è un menù con `is_kids = true` e prezzo 20 €; i piatti del menù bambini non
   vengono copiati in `booking_dishes`, che rappresenta solo il menù principale dell'evento.
+
+## Pagamenti, notifiche e push (migrazione 0002)
+
+- **Acconti**: tabella `payments` con ricevute nel bucket privato `receipts` (foto o PDF, max 10 MB).
+  Visibili e gestibili solo dall'admin. Lo stato `saldato` si imposta a mano dalla prenotazione.
+- **Notifiche**: tabella `notifications` (campanella) e `push_subscriptions` (push web). Le righe le crea
+  il server con la service role; il client legge solo le proprie. Realtime su `notifications`.
+- **Promemoria**: `GET /api/cron/reminders` (cron giornaliero in `vercel.json`, 16:00 UTC) notifica le
+  prenotazioni di domani. Protetta da `Authorization: Bearer ${CRON_SECRET}`.
+- **Variabili d'ambiente** da impostare in `.env.local` e su Vercel (Settings → Environment Variables):
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (mailto:), `CRON_SECRET`.
+  Le chiavi VAPID si generano con `npx web-push generate-vapid-keys`. Senza VAPID le notifiche restano in-app.

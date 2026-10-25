@@ -1,14 +1,14 @@
 import { ChevronDown, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { formatIt, toDate } from "@/components/agenda/agenda-utils";
-import { Badge } from "@/components/ui";
+import { Badge, StatusDot } from "@/components/ui";
 import { cn } from "@/components/ui/cn";
 import {
   SETUP_COLORS,
   SETUP_COLOR_HEX,
+  STATUS_COLORS,
   STATUS_LABELS,
   type BookingListItem,
-  type BookingStatus,
 } from "@/lib/types";
 import {
   bookingTitle,
@@ -30,24 +30,6 @@ export interface BookingCardProps {
   className?: string;
 }
 
-const STATUS_BORDER_LEFT: Record<BookingStatus, string> = {
-  opzione: "border-l-warning",
-  confermato: "border-l-petrol",
-  annullato: "border-l-disabled",
-};
-
-const STATUS_BORDER_TOP: Record<BookingStatus, string> = {
-  opzione: "border-t-warning",
-  confermato: "border-t-petrol",
-  annullato: "border-t-disabled",
-};
-
-const STATUS_DOT: Record<BookingStatus, string> = {
-  opzione: "bg-warning",
-  confermato: "bg-success",
-  annullato: "bg-disabled",
-};
-
 const SETUP_FALLBACK = "#B0B0B0";
 
 /** Menù scelto: etichetta serif in pill petrol, la prima informazione della card. */
@@ -62,19 +44,6 @@ function MenuLabel({ name }: { name: string | null }) {
   return (
     <span className="inline-flex max-w-full items-center rounded-[2px] bg-petrol px-3 py-1.5 font-serif text-[15px] leading-tight text-paper break-words">
       {name}
-    </span>
-  );
-}
-
-/** Stato come indicatore secondario: pallino colorato + testo minuto. */
-function StatusIndicator({ status }: { status: BookingStatus }) {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-slate-dark">
-      <span aria-hidden="true" className={cn("size-2 rounded-full", STATUS_DOT[status])} />
-      <span>
-        <span className="sr-only">Stato: </span>
-        {STATUS_LABELS[status]}
-      </span>
     </span>
   );
 }
@@ -117,15 +86,16 @@ export function BookingCard({
     return (
       <Link
         href={href}
-        aria-label={`${menuName ?? "Menù da definire"}, ${title}${time ? `, ore ${time}` : ""}${b.room ? `, ${b.room.name}` : ""}, ${formatCovers(b)} coperti${allergyCount > 0 ? `, ${allergyCount} allergie` : ""}`}
+        aria-label={`${menuName ?? "Menù da definire"}, ${title}${time ? `, ore ${time}` : ""}${b.room ? `, ${b.room.name}` : ""}, ${formatCovers(b)} coperti${allergyCount > 0 ? `, ${allergyCount} allergie` : ""}, stato ${STATUS_LABELS[b.status]}`}
+        style={{ borderLeftColor: STATUS_COLORS[b.status] }}
         className={cn(
           "flex flex-col gap-1.5 border-l-[3px] bg-cream/70 px-3 py-3 text-ink transition-colors duration-200 hover:bg-sand/60",
-          STATUS_BORDER_LEFT[b.status],
           b.status === "annullato" && "line-through opacity-70",
           className,
         )}
       >
         <span className="flex items-center gap-2 text-[12px] text-slate-dark">
+          <StatusDot status={b.status} size="sm" />
           {dateLabel && <span className="font-medium">{dateLabel}</span>}
           {time && <span className="font-medium tabular-nums text-ink">{time}</span>}
           {allergyCount > 0 && (
@@ -155,16 +125,18 @@ export function BookingCard({
 
   return (
     <article
+      style={{ borderTopColor: STATUS_COLORS[b.status] }}
+      aria-label={`Banchetto, stato ${STATUS_LABELS[b.status]}`}
       className={cn(
         "flex flex-col gap-5 rounded-[2px] border border-sand border-t-[3px] bg-paper p-5 shadow-sm shadow-ink/5 sm:p-6",
-        STATUS_BORDER_TOP[b.status],
+        b.status === "annullato" && "opacity-80",
         className,
       )}
     >
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <MenuLabel name={menuName} />
-          <StatusIndicator status={b.status} />
+          <StatusDot status={b.status} />
         </div>
 
         <div className="flex flex-col gap-2">

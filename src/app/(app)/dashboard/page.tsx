@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { addDays, endOfWeek, startOfWeek } from "date-fns";
+import { addDays, endOfWeek } from "date-fns";
 import { formatIt, toDate, toISO, todayISO, capitalize } from "@/components/agenda/agenda-utils";
 import { BookingCard } from "@/components/bookings/BookingCard";
 import { formatChangeTimestamp } from "@/components/bookings/change-labels";
+import { RoomDayView } from "@/components/dashboard/RoomDayView";
 import { RoomOccupancyMatrix } from "@/components/dashboard/RoomOccupancyMatrix";
-import { ButtonLink, Card, EmptyState, PageHeader } from "@/components/ui";
+import { WeekNav } from "@/components/dashboard/WeekNav";
+import { resolveWeekStart, weekLabel, weekRange } from "@/components/dashboard/week";
+import { ButtonLink, Card, EmptyState, PageHeader, StatusLegend } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import {
   getBookingsInRange,
@@ -19,6 +22,8 @@ export const metadata: Metadata = {
   title: "Dashboard · Casale del Notaio",
 };
 
+type SearchParams = Promise<{ week?: string; day?: string }>;
+
 interface StatTileProps {
   label: string;
   value: number;
@@ -28,28 +33,42 @@ interface StatTileProps {
 
 function StatTile({ label, value, hint, highlight = false }: StatTileProps) {
   return (
-    <Card className={`flex flex-col gap-3 p-5 ${highlight ? "border-warning/60 bg-warning/10" : ""}`}>
-      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">{label}</p>
-      <p className="font-serif text-4xl tabular-nums text-ink lg:text-5xl">{value}</p>
-      <p className="text-[13px] text-slate-dark">{hint}</p>
+    <Card
+      className={`flex min-w-0 flex-col gap-2 p-4 sm:gap-3 sm:p-5 ${highlight ? "border-warning/60 bg-warning/10" : ""}`}
+    >
+      <p className="text-[10px] font-medium uppercase leading-snug tracking-[0.12em] text-bronze sm:text-[11px] sm:tracking-[0.14em]">
+        {label}
+      </p>
+      <p className="font-serif text-3xl tabular-nums text-ink sm:text-4xl lg:text-5xl">{value}</p>
+      <p className="text-[12px] leading-snug text-slate-dark sm:text-[13px]">{hint}</p>
     </Card>
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAdmin();
 
+  const params = await searchParams;
   const today = todayISO();
   const todayDate = toDate(today);
-  const weekStart = startOfWeek(todayDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(todayDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => toISO(addDays(weekStart, i)));
+  const currentWeekStart = resolveWeekStart(undefined, today);
+  const weekStart = resolveWeekStart(params.week, today);
+  const week = weekRange(weekStart);
+  const weekIso = week.startIso;
+  const weekDays = week.days;
+  const selectedDay =
+    params.day && weekDays.includes(params.day)
+      ? params.day
+      : weekDays.includes(today)
+        ? today
+        : weekDays[0];
+  const isCurrentWeek = week.startIso === toISO(currentWeekStart);
 
   const [stats, upcoming, rooms, weekBookings, deletions] = await Promise.all([
     getDashboardStats(),
     getUpcomingBookings(8),
     getRooms(),
-    getBookingsInRange(toISO(weekStart), toISO(weekEnd)),
+    getBookingsInRange(week.startIso, week.endIso),
     getDeletionLog(5),
   ]);
 
@@ -77,8 +96,12 @@ export default async function DashboardPage() {
     },
   ];
 
+  const activeRooms = rooms.filter((room) => room.active);
+  const previousWeekIso = toISO(addDays(week.start, -7));
+  const nextWeekIso = toISO(addDays(week.start, 7));
+
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex min-w-0 flex-col gap-8 lg:gap-10">
       <PageHeader
         eyebrow="Direzione"
         title="Dashboard"
@@ -90,13 +113,13 @@ export default async function DashboardPage() {
         }
       />
 
-      <section aria-label="Indicatori principali" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Indicatori principali" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {tiles.map((tile) => (
           <StatTile key={tile.label} {...tile} />
         ))}
       </section>
 
-      <section aria-labelledby="prossimi-eventi" className="flex flex-col gap-5">
+      <section aria-labelledby="prossimi-eventi" className="flex min-w-0 flex-col gap-5">
         <div className="flex items-end justify-between gap-4 border-b border-sand pb-3">
           <div className="flex flex-col gap-1">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">In arrivo</p>
@@ -112,9 +135,9 @@ export default async function DashboardPage() {
             description="Quando verranno create nuove prenotazioni compariranno qui."
           />
         ) : (
-          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <ul className="flex flex-col gap-3 md:grid md:grid-cols-2 xl:grid-cols-4">
             {upcoming.map((booking) => (
-              <li key={booking.id}>
+              <li key={booking.id} className="min-w-0">
                 <BookingCard booking={booking} variant="compact" showDate className="h-full" />
               </li>
             ))}
@@ -122,34 +145,53 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <section aria-labelledby="sale-settimana" className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2 border-b border-sand pb-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Settimana corrente</p>
+      <section aria-labelledby="sale-settimana" className="flex min-w-0 flex-col gap-5">
+        <div className="flex flex-col gap-4 border-b border-sand pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">
+              {weekLabel(weekStart, currentWeekStart)}
+            </p>
             <h2 id="sale-settimana" className="text-2xl">
-              Sale questa settimana
+              Occupazione sale
             </h2>
+            <p className="text-[13px] text-slate-dark">
+              {formatIt(week.start, "d MMMM")} – {formatIt(endOfWeek(week.start, { weekStartsOn: 1 }), "d MMMM yyyy")}
+            </p>
           </div>
-          <p className="text-[13px] text-slate-dark">
-            {formatIt(weekStart, "d MMMM")} – {formatIt(weekEnd, "d MMMM yyyy")}
-          </p>
+          <WeekNav
+            previousHref={`/dashboard?week=${previousWeekIso}`}
+            nextHref={`/dashboard?week=${nextWeekIso}`}
+            todayHref="/dashboard"
+            isCurrentWeek={isCurrentWeek}
+          />
         </div>
 
-        <RoomOccupancyMatrix
-          rooms={rooms.filter((room) => room.active)}
-          days={weekDays}
-          bookings={weekBookings}
-        />
+        <StatusLegend />
+
+        <div className="hidden min-w-0 lg:block">
+          <RoomOccupancyMatrix rooms={activeRooms} days={weekDays} bookings={weekBookings} />
+        </div>
+
+        <div className="min-w-0 lg:hidden">
+          <RoomDayView
+            rooms={activeRooms}
+            days={weekDays}
+            selectedDay={selectedDay}
+            todayIso={today}
+            bookings={weekBookings}
+            dayHref={(iso) => `/dashboard?week=${weekIso}&day=${iso}`}
+          />
+        </div>
 
         <p className="text-[13px] text-slate-dark">
-          Le celle piene indicano una sala occupata: coperti sulla capienza. Clicca per aprire la prenotazione.{" "}
+          Le sale piene sono occupate: coperti sulla capienza. Tocca o clicca per aprire la prenotazione.{" "}
           <Link href="/catalogo" className="font-medium text-petrol underline-offset-2 hover:underline">
             Gestisci sale e menù
           </Link>
         </p>
       </section>
 
-      <section aria-labelledby="eliminazioni-recenti" className="flex flex-col gap-4">
+      <section aria-labelledby="eliminazioni-recenti" className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-1 border-b border-sand pb-3">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-bronze">Registro</p>
           <h2 id="eliminazioni-recenti" className="text-xl">
@@ -160,15 +202,17 @@ export default async function DashboardPage() {
         {deletions.length === 0 ? (
           <p className="text-[13px] text-slate-dark">Nessuna prenotazione eliminata.</p>
         ) : (
-          <Card className="divide-y divide-sand">
+          <Card className="min-w-0 divide-y divide-sand">
             <ul>
               {deletions.map((change) => (
                 <li
                   key={change.id}
-                  className="flex flex-col gap-1 px-5 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                  className="flex min-w-0 flex-col gap-0.5 px-4 py-2.5 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
-                  <span className="text-ink">{change.booking_label ?? change.old_value ?? "Prenotazione"}</span>
-                  <span className="text-slate-dark">
+                  <span className="min-w-0 break-words text-ink">
+                    {change.booking_label ?? change.old_value ?? "Prenotazione"}
+                  </span>
+                  <span className="shrink-0 text-[12px] text-slate-dark">
                     Eliminata da {change.changed_by_name} · {formatChangeTimestamp(change.created_at)}
                   </span>
                 </li>

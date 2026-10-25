@@ -8,3 +8,4 @@ export { Badge, StatusBadge, ColorDots, type BadgeTone, type BadgeProps } from "
 export { EmptyState, PageHeader, Alert, Skeleton, type EmptyStateProps, type PageHeaderProps, type AlertTone } from "./Feedback";
 export { ErrorState, type ErrorStateProps } from "./ErrorState";
 export { Modal, type ModalProps } from "./Modal";
+export { StatusDot, StatusLegend, type StatusDotProps } from "./StatusDot";
